@@ -1,0 +1,29 @@
+{
+    "name": "niku-solutions/cart",
+    "description": "A codeable and flexible custom cart manager for Laravel with custom fields. Extendable and as dynamic as you wish.",
+    "keywords": [
+        "laravel cart",
+        "laravel cart manager",
+        "laravel checkout manager"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Nick Kuijpers",
+            "email": "info@niku-solutions.nl"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Niku\\Cart\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^7.0|^7.1",
+        "illuminate/http": "^5.2",
+        "illuminate/auth": "^5.2",
+        "illuminate/database": "^5.2",
+        "illuminate/support": "^5.2",
+        "niku-solutions/cms": "^3.1"
+    }
+}
