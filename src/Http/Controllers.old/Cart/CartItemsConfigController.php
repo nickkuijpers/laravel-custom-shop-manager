@@ -1,8 +1,8 @@
 <?php
 
-namespace Niku\Cms\Http\Controllers\Cart;
+namespace Niku\Cart\Http\Controllers\Cart;
 
-use App\Application\Custom\Controllers\Cart\CartController;
+use Niku\Cart\Http\Controllers\CartController;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Niku\Cms\Http\NikuPosts;

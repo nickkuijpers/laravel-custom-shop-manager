@@ -1,16 +1,16 @@
 <?php
-/**
- * Adding cart config templates
- */
 
 return [
 
-    'templates' => [
-        'standaard' => App\Application\Custom\Cart\Templates\Simple::class,
-        'licentie' => App\Application\Custom\Cart\Templates\Complex::class,
-    ],
-    'checkout' => [
-        'default' => App\Application\Custom\Cart\Checkout\CheckoutConfig::class,
-    ],
+    'templates' => [        
+        'standaard' => [
+            'label' => 'Standaard product',
+            'class' => App\Cart\Templates\Simple::class,
+        ],
+        'licentie' => [
+            'label' => 'Licentie product',
+            'class' => App\Cart\Templates\Complex::class,
+        ]
+    ],    
 
 ];

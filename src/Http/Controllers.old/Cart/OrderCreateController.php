@@ -1,8 +1,8 @@
 <?php
 
-namespace Niku\Cms\Http\Controllers\Cart;
+namespace Niku\Cart\Http\Controllers\Cart;
 
-use App\Application\Custom\Controllers\Cart\CartController;
+use Niku\Cart\Http\Controllers\CartController;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Mollie\Laravel\Facades\Mollie;
@@ -10,7 +10,7 @@ use Niku\Cms\Http\NikuPosts;
 
 class OrderCreateController extends CartController
 {
-    public function handle(Request $request, $websiteId)
+    public function handle(Request $request)
     {
         $cart = $this->getCart($request->cart_identifier);
         if(empty($cart)){

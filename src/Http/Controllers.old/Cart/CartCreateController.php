@@ -1,12 +1,13 @@
 <?php
 
-namespace Niku\Cms\Http\Controllers\Cart;
+namespace Niku\Cart\Http\Controllers\Cart;
 
 use Illuminate\Http\Request;
 use Niku\Cms\Http\NikuPosts;
 use App\Http\Controllers\Controller;
+use Niku\Cart\Http\Controllers\CartController;
 
-class CartCreateController extends Controller
+class CartCreateController extends CartController
 {
     public function handle(Request $request)
     {

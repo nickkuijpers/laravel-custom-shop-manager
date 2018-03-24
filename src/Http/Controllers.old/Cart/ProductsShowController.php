@@ -1,19 +1,22 @@
 <?php
 
-namespace Niku\Cms\Http\Controllers\Cart;
+namespace Niku\Cart\Http\Controllers\Cart;
 
-use App\Application\Custom\Cart\Templates\Complex;
-use App\Application\Custom\Cart\Templates\Simple;
-use App\Application\Custom\Controllers\Cart\CartController;
-use App\Application\Custom\Requests\ProductsShowRequest;
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Niku\Cms\Http\NikuPosts;
+use App\Http\Controllers\Controller;
+use App\Application\Custom\Cart\Templates\Simple;
+use App\Application\Custom\Cart\Templates\Complex;
+use Niku\Cart\Http\Controllers\CartController;
 
 class ProductsShowController extends CartController
 {
-    public function handle(ProductsShowRequest $request)
-    {
+    public function handle(Request $request)
+    {                
+        $this->validate($request, [
+            'product_id' => 'required',            
+        ]);
+        
         $product = $this->getProduct($request->product_id);
 
         // If the product does not exist, we log it into the database so we can add it later
@@ -23,13 +26,13 @@ class ProductsShowController extends CartController
                 $unknownProduct = new NikuPosts;
                 $unknownProduct->post_type = 'unknown-products';
                 $unknownProduct->post_title = $request->product_id;
-                $unknownProduct->post_name = 'up-' . $request->product_id;
+                $unknownProduct->post_name = $request->product_id;
                 $unknownProduct->save();
             }
 
             return $this->abort('Product "' . $request->product_id . '" does not exist or is inactive.');
         }
-
+        
         // Lets get the add to cart product type configuration file
         $cartConfig = $this->GetProductTemplate($product->template);
         if(!$cartConfig){

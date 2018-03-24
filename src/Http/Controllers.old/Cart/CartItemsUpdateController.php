@@ -1,17 +1,22 @@
 <?php
 
-namespace Niku\Cms\Http\Controllers\Cart;
+namespace Niku\Cart\Http\Controllers\Cart;
 
-use App\Application\Custom\Controllers\Cart\CartController;
-use App\Application\Custom\Requests\CartProductUpdateRequest;
+use Niku\Cart\Http\Controllers\CartController;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Niku\Cms\Http\NikuPosts;
 
 class CartItemsUpdateController extends CartController
 {
-    public function handle(CartProductUpdateRequest $request)
+    public function handle(Request $request)
     {
+        $this->validate($request, [
+            'cart_identifier' => 'required',
+            'item_identifier' => 'required',
+            'item_quantity' => 'integer',
+        ]);
+
         $cart = $this->getCart($request->cart_identifier);
         if(empty($cart)){
             return $this->abort('The shoppingcart could not be found.', 422);

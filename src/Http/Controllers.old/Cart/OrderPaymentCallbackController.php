@@ -1,9 +1,8 @@
 <?php
 
-namespace Niku\Cms\Http\Controllers\Cart;
+namespace Niku\Cart\Http\Controllers\Cart;
 
-use App\Application\Custom\Controllers\Cart\CartController;
-use App\Application\Custom\Requests\CartShowRequest;
+use Niku\Cart\Http\Controllers\CartController;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Mollie\Laravel\Facades\Mollie;

@@ -1,20 +1,23 @@
 <?php
 
-namespace Niku\Cms\Http\Controllers\Cart;
+namespace Niku\Cart\Http\Controllers\Cart;
 
-use App\Application\Custom\Controllers\Cart\CartController;
-use App\Application\Custom\Requests\OrderShowRequest;
+use Niku\Cart\Http\Controllers\CartController;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Niku\Cms\Http\NikuPosts;
 
-class OrderShowController extends CartController
+class CartShowController extends CartController
 {
-    public function handle(OrderShowRequest $request)
+    public function handle(Request $request)
     {
-        $cart = $this->getOrder($request->order_identifier);
+        $this->validate($request, [
+            'cart_identifier' => 'required',            
+        ]);
+
+        $cart = $this->getCart($request->cart_identifier);
         if(empty($cart)){
-            return $this->abort('The order could not be found.', 422);
+            return $this->abort('The shoppingcart could not be found.', 422);
         }
 
         $cartItems = $this->getAllCartProducts($cart);
@@ -124,9 +127,7 @@ class OrderShowController extends CartController
             'cart' => [
                 'id' => $cart->post_name,
                 'price_total' => number_format($priceTotal, 2, ',', ''),
-                'payment_status' => $cart->getMeta('payment_status'),
-                'payment_method' => $cart->getMeta('payment_method'),
-                'items' => $items,
+                'items' => $items
             ]
         ]);
     }

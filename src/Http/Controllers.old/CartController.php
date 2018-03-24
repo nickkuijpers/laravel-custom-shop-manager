@@ -1,6 +1,6 @@
 <?php
 
-namespace Niku\Cms\Http\Controllers;
+namespace Niku\Cart\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Niku\Cms\Http\NikuPosts;
@@ -21,7 +21,7 @@ class CartController extends Controller
             return false;
         }
 
-        return (new $cartTemplates['templates'][$template]);
+        return (new $cartTemplates['templates'][$template]['class']);
     }
 
     /**
@@ -45,13 +45,9 @@ class CartController extends Controller
      */
     public function triggerEvent($action, $postTypeModel, $post)
     {
-        if(!empty($postTypeModel->events)){
-            if(array_key_exists($action, $postTypeModel->events)){
-                foreach($postTypeModel->events[$action] as $event) {
-                    event(new $event($post));
-                }
-            }
-        }
+        if(method_exists($postTypeModel, $action)){
+			$postTypeModel->$action($postTypeModel, $post, $postmeta);
+		}
     }
 
     /**
@@ -110,7 +106,7 @@ class CartController extends Controller
     {
         $unknownProduct = NikuPosts::where([
             ['post_type', '=', 'unknown-products'],
-            ['post_name', '=', 'up-' . $unknownProductIdentifier],
+            ['post_name', '=', $unknownProductIdentifier],
         ])->first();
 
         return $unknownProduct;
@@ -155,7 +151,7 @@ class CartController extends Controller
     {
         return response()->json([
             'code' => 'error',
-            'status' => $message,
+            'errors' => [0 => [$message]],
         ], 422);
     }
 

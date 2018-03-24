@@ -1,10 +1,10 @@
 <?php
 
-namespace Niku\Cms\Http\Controllers\Cart;
+namespace Niku\Cart\Http\Controllers\Cart;
 
 use App\Application\Custom\Cart\Templates\Complex;
 use App\Application\Custom\Cart\Templates\Simple;
-use App\Application\Custom\Controllers\Cart\CartController;
+use Niku\Cart\Http\Controllers\CartController;
 use App\Application\Custom\Requests\CartProductAddRequest;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -12,8 +12,14 @@ use Niku\Cms\Http\NikuPosts;
 
 class CartItemsAddController extends CartController
 {
-    public function handle(CartProductAddRequest $request, $websiteId)
+    public function handle(Request $request)
     {
+        $this->validate($request, [
+            'cart_identifier' => 'required',
+            'product_identifier' => 'required',
+            'item_quantity' => 'integer',
+        ]);
+        
         $cart = $this->getCart($request->cart_identifier);
         if(empty($cart)){
             return $this->abort('The shoppingcart could not be found.', 422);

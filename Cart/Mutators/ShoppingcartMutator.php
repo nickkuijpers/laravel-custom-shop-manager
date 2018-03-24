@@ -1,23 +1,30 @@
 <?php
 
-namespace Niku\Cms\Http\Controllers\Cart;
+namespace App\Application\Custom\Cart\Mutators;
 
-use App\Application\Custom\Controllers\Cart\CartController;
-use App\Application\Custom\Requests\CartShowRequest;
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use Niku\Cms\Http\NikuPosts;
+use Niku\Cms\Http\NikuTaxonomies;
+use Niku\Cms\Http\Controllers\cmsController;
+use Niku\Cms\Http\Controllers\MutatorController;
 
-class CartShowController extends CartController
-{
-    public function handle(CartShowRequest $request)
-    {
-        $cart = $this->getCart($request->cart_identifier);
-        if(empty($cart)){
-            return $this->abort('The shoppingcart could not be found.', 422);
+class ShoppingcartMutator extends MutatorController
+{	  	
+
+    public function out($customField, $collection, $key, $postTypeModel, $holdValue, $request)    
+    {             
+        $postId = data_get($collection, 'post.id');
+        if(!$postId){
+            return $customField;
         }
 
-        $cartItems = $this->getAllCartProducts($cart);
+        $cart = NikuPosts::where([
+            ['post_type', '=', 'shoppingcart'],
+            ['id', '=', $postId],
+        ])->with('postmeta')->first();
+
+        $cartItems = $cart->posts()->where([
+            ['post_type', '=', 'shoppingcart-products']
+        ])->with('postmeta')->get();
 
         $items = [];
         $priceTotal = 0;
@@ -35,17 +42,15 @@ class CartShowController extends CartController
                 $configPosition = false;
             }
 
-            $items[$key] = [
-                'product' => [
-                    'id' => $value->id,
-                    'post_title' => $value->post_title,
-                    'post_name' => $value->post_name,
+            $items[$key] = [                
+                'id' => $value->id,
+                'post_title' => $value->post_title,
+                'post_name' => $value->post_name,
 
-                    // Pricing and quantity details
-                    'price_single' => number_format($value->getMeta('price_single'), 2, ',', ''),
-                    'quantity' => (integer) number_format($value->getMeta('quantity'), 0, '.', ''),
-                    'price_total' => number_format($value->getMeta('price_total'), 2, '.', ''),
-                ],
+                // Pricing and quantity details
+                'price_single' => number_format($value->getMeta('price_single'), 2, ',', ''),
+                'quantity' => (integer) number_format($value->getMeta('quantity'), 0, '.', ''),
+                'price_total' => number_format($value->getMeta('price_total'), 2, '.', ''),                
                 'display_quantity' => $displayQuantity,
                 'config_per_quantity' => $configPerQuantity,
             ];
@@ -119,13 +124,24 @@ class CartShowController extends CartController
 
         }
 
-        // Lets return the response
-        return response()->json([
-            'cart' => [
-                'id' => $cart->post_name,
-                'price_total' => number_format($priceTotal, 2, ',', ''),
-                'items' => $items
-            ]
-        ]);
+        $customField['items'] = $items;
+        $customField['price_total'] = number_format($priceTotal, 2, ',', '');
+        $customField['postIdentifier'] = $cart->post_name;
+        $customField['value'] = $holdValue;
+
+        return $customField;   
+    }
+
+    protected function GetProductTemplate($template)
+    {
+        // Receive the config variable where we have whitelisted all models
+        $cartTemplates = config('niku-cart');
+
+        // Validating if the model exists in the array
+        if(!array_key_exists($template, $cartTemplates['templates'])){
+            return false;
+        }
+
+        return (new $cartTemplates['templates'][$template]['class']);
     }
 }

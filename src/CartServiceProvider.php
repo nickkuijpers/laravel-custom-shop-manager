@@ -4,7 +4,7 @@ namespace Niku\Cms;
 
 use Illuminate\Support\ServiceProvider;
 
-class CmsServiceProvider extends ServiceProvider
+class CartServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap the application services.
@@ -19,12 +19,12 @@ class CmsServiceProvider extends ServiceProvider
         // Register config
         $this->publishes([
             __DIR__.'/../config/niku-cart.php' => config_path('niku-cart.php'),
-        ], 'niku-config');
+        ], 'niku-cart-config');
 
         // Register the default post types
         $this->publishes([
-            __DIR__.'/../PostTypes' => app_path('/Cms/PostTypes'),
-        ], 'niku-cart');
+            __DIR__.'/../Cart' => app_path('/Application/Custom/Cart'),            
+        ], 'niku-cart-posttypes');
 
     }
 }
