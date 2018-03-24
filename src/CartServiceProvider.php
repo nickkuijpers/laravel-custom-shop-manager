@@ -1,6 +1,6 @@
 <?php
 
-namespace Niku\Cms;
+namespace Niku\Cart;
 
 use Illuminate\Support\ServiceProvider;
 
@@ -23,7 +23,7 @@ class CartServiceProvider extends ServiceProvider
 
         // Register the default post types
         $this->publishes([
-            __DIR__.'/../Cart' => app_path('/Application/Custom/Cart'),            
+            __DIR__.'/../Cart' => app_path('/Application/Custom/Cart'),
         ], 'niku-cart-posttypes');
 
     }
