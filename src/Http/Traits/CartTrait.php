@@ -41,9 +41,9 @@ trait CartTrait
 
         return (new $cartTemplates['templates'][$template]['class']);
     }
-    
+
     protected function getProduct($productIdentifier)
-    {        
+    {
         $product = NikuPosts::where([
             ['post_type', '=', 'products'],
             ['status', '=', '1'],
@@ -70,4 +70,113 @@ trait CartTrait
             'errors' => [0 => [$message]],
         ], 422);
     }
+
+    public function getCustomFieldsByLocation($location, $postTypeModel)
+    {
+        $validations = [];
+        foreach($postTypeModel->view as $key => $value){
+            foreach($value['customFields'] as $fieldKey => $fieldValue){
+
+                $required = false;
+
+                if(array_key_exists('validation_location', $fieldValue)){
+
+                    switch($location){
+                        case 'addtocart':
+                            if(array_key_exists('addtocart', $fieldValue['validation_location'])){
+                                if($fieldValue['validation_location']['addtocart'] === true){
+                                    $required = true;
+                                }
+                            }
+                        break;
+                        case 'shoppingcart':
+                            if(array_key_exists('shoppingcart', $fieldValue['validation_location'])){
+                                if($fieldValue['validation_location']['shoppingcart'] === true){
+                                    $required = true;
+                                }
+                            }
+                        break;
+                        case 'configuration':
+                            if(array_key_exists('configuration', $fieldValue['validation_location'])){
+                                if($fieldValue['validation_location']['configuration'] === true){
+                                    $required = true;
+                                }
+                            }
+                        break;
+                    }
+
+                } else {
+                    $required = true;
+                }
+
+                // Requires validation
+                if($required === true){
+                    if(array_key_exists('validation', $fieldValue)){
+                        $validations[$fieldKey] = $fieldValue;
+                    }
+                }
+
+            }
+
+        }
+
+        return $validations;
+    }
+
+    public function getValidationsByLocation($location, $postTypeModel)
+    {
+        $validations = [];
+        foreach($postTypeModel->view as $key => $value){
+            foreach($value['customFields'] as $fieldKey => $fieldValue){
+
+                $required = false;
+
+                if(array_key_exists('validation_location', $fieldValue)){
+
+                    switch($location){
+                        case 'addtocart':
+                            if(array_key_exists('addtocart', $fieldValue['validation_location'])){
+                                if($fieldValue['validation_location']['addtocart'] === true){
+                                    $required = true;
+                                }
+                            }
+                        break;
+                        case 'shoppingcart':
+                            if(array_key_exists('shoppingcart', $fieldValue['validation_location'])){
+                                if($fieldValue['validation_location']['shoppingcart'] === true){
+                                    $required = true;
+                                }
+                            }
+                        break;
+                        case 'configuration':
+                            if(array_key_exists('configuration', $fieldValue['validation_location'])){
+                                if($fieldValue['validation_location']['configuration'] === true){
+                                    $required = true;
+                                }
+                            }
+                        break;
+                    }
+
+                } else {
+                    $required = true;
+                }
+
+                if(array_key_exists('saveable', $fieldValue) && $fieldValue['saveable'] === false){
+                    $required = false;
+                }
+
+                // Requires validation
+                if($required === true){
+                    if(array_key_exists('validation', $fieldValue)){
+                        $validations[$fieldKey] = $fieldValue['validation'];
+                    }
+                }
+
+            }
+
+        }
+
+        return $validations;
+    }
+
 }

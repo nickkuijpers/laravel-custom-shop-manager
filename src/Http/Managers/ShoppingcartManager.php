@@ -12,10 +12,10 @@ use Niku\Cms\Http\Controllers\Cms\ShowPostController;
 class ShoppingcartManager extends NikuPosts
 {
     use CartTrait;
-    
+
     // The label of the custom post type
 	public $label = 'Checkout';
-    
+
     // Define the custom post type
     public $identifier = 'shoppingcart';
 
@@ -26,10 +26,10 @@ class ShoppingcartManager extends NikuPosts
     public $helpers;
 
     public $getPostByPostName = true;
-    
+
     public $config = [
         'back_to_previous_page' => false,
-        'disable_overview_button' => true,        
+        'disable_overview_button' => true,
         'link_to_edit_post_type' => 'step4',
         'created_at_post_type' => 'step4',
         'redirect_after_created' => 'step4',
@@ -38,7 +38,7 @@ class ShoppingcartManager extends NikuPosts
 
         'template' => [
             'single' => [
-                'enable_title' => true,                
+                'enable_title' => true,
                 'page_title' => 'Winkelwagens',
 
                 'enable_button' => false,
@@ -52,12 +52,12 @@ class ShoppingcartManager extends NikuPosts
                     'name' => 'step4',
                     'post_type' => 'step4',
                     'enable' => true,
-                ],  
+                ],
                 'redirect_after_editted_link' => [
                     'name' => 'step4',
                     'post_type' => 'step4',
                     'enable' => true,
-                ], 
+                ],
             ],
             'list' => [
                 'enable' => false,
@@ -75,8 +75,8 @@ class ShoppingcartManager extends NikuPosts
     ];
 
     public function __construct()
-    {      
-        $this->helpers = new cmsController;  
+    {
+        $this->helpers = new cmsController;
         $this->view = $this->view();
     }
 
@@ -84,7 +84,7 @@ class ShoppingcartManager extends NikuPosts
     {
         Validator::make($request->all(), [
             'cart_identifier' => 'required',
-            'item_identifier' => 'required',        
+            'item_identifier' => 'required',
         ])->validate();
 
         $cart = $this->getCart($request->cart_identifier);
@@ -105,9 +105,9 @@ class ShoppingcartManager extends NikuPosts
                 'cart' => $cart,
                 'product' => $product,
             ]);
-        } 
+        }
 
-        return (new ShowPostController)->init($request, 'shoppingcart', $request->cart_identifier);        
+        return (new ShowPostController)->init($request, 'shoppingcart', $request->cart_identifier);
     }
 
     public function edit_custom_post_update_quantity($request)
@@ -118,7 +118,7 @@ class ShoppingcartManager extends NikuPosts
             'item_quantity' => 'integer',
         ])->validate();
 
-        $cart = $this->getCart($request->cart_identifier);        
+        $cart = $this->getCart($request->cart_identifier);
         if(empty($cart)){
             return $this->abort('The shoppingcart could not be found.', 422);
         }
@@ -152,7 +152,7 @@ class ShoppingcartManager extends NikuPosts
             ['id', '=', $request->item_identifier],
         ])->with('postmeta')->first();
 
-        return (new ShowPostController)->init($request, 'shoppingcart', $request->cart_identifier);        
+        return (new ShowPostController)->init($request, 'shoppingcart', $request->cart_identifier);
     }
 
     public function edit_custom_post_initialize_cart($request)
@@ -196,9 +196,9 @@ class ShoppingcartManager extends NikuPosts
         ], 200);
     }
 
-    public function edit_custom_post_get_product($request){        
+    public function edit_custom_post_get_product($request){
         Validator::make($request->all(), [
-            'post_name' => 'required',         
+            'post_name' => 'required',
         ])->validate();
 
         $product = $this->getProduct($request->post_name);
@@ -216,7 +216,7 @@ class ShoppingcartManager extends NikuPosts
 
             return $this->abort('Product "' . $request->product_id . '" does not exist or is inactive.');
         }
-        
+
         // Lets get the add to cart product type configuration file
         $cartConfig = $this->GetProductTemplate($product->template);
         if(!$cartConfig){
@@ -232,13 +232,13 @@ class ShoppingcartManager extends NikuPosts
     }
 
     public function edit_custom_post_add_to_cart($request)
-    {        
+    {
         Validator::make($request->all(), [
             'cart_identifier' => 'required',
             'product_identifier' => 'required',
             'item_quantity' => 'integer',
-        ])->validate();        
-        
+        ])->validate();
+
         $cart = $this->getCart($request->cart_identifier);
         if(empty($cart)){
             return $this->abort('The shoppingcart could not be found.', 422);
@@ -271,8 +271,8 @@ class ShoppingcartManager extends NikuPosts
                     }
                 }
 
-                // Lets validate the request                
-                Validator::make($request->all(), $validationRules)->validate();   
+                // Lets validate the request
+                Validator::make($request->all(), $validationRules)->validate();
 
                 // Setting the values to save as product meta
                 $metasToSave = $request->only($keys);
@@ -416,11 +416,11 @@ class ShoppingcartManager extends NikuPosts
             ]
         ]);
     }
-            
+
     public function triggerEvent($action, $postTypeModel, $post)
     {
         if(method_exists($postTypeModel, $action)){
             $postTypeModel->$action($postTypeModel, $post, $postmeta);
         }
-    }        
+    }
 }

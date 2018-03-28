@@ -23,18 +23,18 @@ class AddToCartManager extends NikuPosts
 	public $label = 'Checkout';
 
     // Define the custom post type
-    public $identifier = 'shoppingcart-products';    
-    
+    public $identifier = 'shoppingcart-products';
+
     // Users can only view their own posts when this is set to true
     public $userCanOnlySeeHisOwnPosts = false;
 
-    public $disableDefaultPostName = true;    
+    public $disableDefaultPostName = true;
     public $disableSanitizingPostName = true;
     public $makePostNameRandom = true;
 
      public $config = [
         'back_to_previous_page' => false,
-        'disable_overview_button' => true,        
+        'disable_overview_button' => true,
         'link_to_edit_post_type' => 'step4',
         'created_at_post_type' => 'step4',
         'redirect_after_created' => 'step4',
@@ -43,7 +43,7 @@ class AddToCartManager extends NikuPosts
 
         'template' => [
             'single' => [
-                'enable_title' => false,                
+                'enable_title' => false,
                 'page_title' => 'Winkelwagens',
 
                 'enable_button' => false,
@@ -57,19 +57,19 @@ class AddToCartManager extends NikuPosts
                     'name' => 'step4',
                     'post_type' => 'step4',
                     'enable' => true,
-                ],  
+                ],
                 'redirect_after_editted_link' => [
                     'name' => 'step4',
                     'post_type' => 'step4',
                     'enable' => true,
-                ], 
-            ],            
+                ],
+            ],
         ],
     ];
 
     public function __construct()
-    {      
-        $this->helpers = new cmsController;  
+    {
+        $this->helpers = new cmsController;
         $this->view = $this->view();
     }
 
@@ -81,8 +81,8 @@ class AddToCartManager extends NikuPosts
         $continue = true;
 
         Validator::make($request->all(), [
-            'post_name' => 'required', 
-            'cart_identifier' => 'required',                     
+            'post_name' => 'required',
+            'cart_identifier' => 'required',
         ])->validate();
 
         $cartModel = $this->getCart($request->cart_identifier);
@@ -90,57 +90,103 @@ class AddToCartManager extends NikuPosts
             return [
                 'continue' => false,
                 'message' => 'The cart does not exist. Try clearing your localstorage.'
-            ];          
+            ];
         }
 
-        // Check custom validations         
-        $validationRules = $this->helpers->validatePostFields($request->all(), $request, $this);        
+        // Check custom validations
+        $validationRules = $this->getValidationsByLocation('addtocart', $this);
         Validator::make($request->all(), $validationRules)->validate();
 
         // Get the product
         $product = $this->getProduct($request->post_name);
-        
+
         // If the product does not exist, we log it into the database so we can validate it later
         if(!$product){
-            $unknownProduct = $this->getUnknownProduct($request->post_name);            
+            $unknownProduct = $this->getUnknownProduct($request->post_name);
             if(!$unknownProduct){
                 $unknownProduct = new NikuPosts;
                 $unknownProduct->post_type = 'unknown-products';
                 $unknownProduct->post_title = $request->post_name;
                 $unknownProduct->post_name = $request->post_name;
                 $unknownProduct->save();
-            }            
+            }
 
             return [
                 'continue' => false,
                 'message' => 'Product "' . $request->post_name . '" does not exist or is inactive.'
-            ];            
-        }        
+            ];
+        }
+    }
+
+    public function override_show_post($id, $request)
+    {
+        $collection = [];
+
+        $customFields = $this->getCustomFieldsByLocation('addtocart', $this);
+
+        $collection['templates']['default']['customFields'] = $customFields;
+
+        $collection['config'] = $this->config;
+
+        switch($id) {
+            case '0';
+                 $toMerge = [];
+            break;
+            default:
+                $post = User::where([
+                    [ 'id' , '=', $id]
+                ])->with('meta')->first();
+                $collection['post'] = $post;
+                $toMerge = [
+                    'first_name' => [
+                        'value' => $post->first_name
+                    ],
+                    'last_name' => [
+                        'value' => $post->last_name
+                    ],
+                    'email' => [
+                        'value' => $post->email
+                    ],
+                    'address' =>[
+                      'value' => $post->getMeta('address')
+                    ]
+                ];
+            break;
+        }
+
+        $collection = $this->helpers->addValuesToCollection($collection, $toMerge);
+        $collection = $this->helpers->showMutator($this, $collection, $request);
+
+        unset($collection['templates']['listing']);
+
+        return $collection;
     }
 
     /**
      * Lets connect the added post to the shoppingcart and do the required actions
      */
     public function override_create_post($request)
-    {        
-        $onCheck = $this->validateCreate($request);        
-        if($onCheck['continue'] === false){                        
+    {
+        $onCheck = $this->validateCreate($request);
+        if($onCheck['continue'] === false){
             return $this->abort('You are not authorized to do this.');
         }
-        
+
+        // Receive the cart instance
         $cart = $this->getCart($request['cart_identifier']);
-             
-        $product = $this->getProduct($request['post_name']);            
-        
+
+        // Receive the product instance
+        $product = $this->getProduct($request['post_name']);
+
         // // Lets validate if we have a quantity in the request
         if(!empty($request['quantity'])){
             $quantity = (int) $request['quantity'];
         } else {
             $quantity = 1;
-        }    
-        
-        if($this->singularProduct === true){                              
-            
+        }
+
+        if($this->singularProduct === true){
+
             // Lets check if the product is already in the cart
             $cartProduct = $cart->posts()->where([
                 ['post_type', '=', 'shoppingcart-products'],
@@ -176,7 +222,7 @@ class AddToCartManager extends NikuPosts
             $cartProduct->save();
 
             // Lets attach the product to the cart
-            $cartProduct->taxonomies()->attach($cart);                        
+            $cartProduct->taxonomies()->attach($cart);
 
             $toSave = [];
             $toSave['quantity'] = $quantity;
@@ -199,7 +245,7 @@ class AddToCartManager extends NikuPosts
 			'config' => $this->config,
     		'code' => 'success',
     		'message' => 'Succesvol toegevoegd.',
-    		'action' => 'create',    		
-    	], 200);    
-    }	 
+    		'action' => 'create',
+    	], 200);
+    }
 }
