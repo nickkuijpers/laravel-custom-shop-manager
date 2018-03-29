@@ -13,6 +13,7 @@ class AddToCartManager extends NikuPosts
     use CartTrait;
 
     public $singularProduct = false;
+    public $disableQuantity = false;
 
     public $view;
     public $helpers;
@@ -116,6 +117,26 @@ class AddToCartManager extends NikuPosts
                 'message' => 'Product "' . $request->post_name . '" does not exist or is inactive.'
             ];
         }
+
+        // Add a custom validator
+        $customAddToCartValidator = $this->customAddToCartValidator($request->cart_identifier);
+        if(is_array($customAddToCartValidator) && array_key_exists('continue', $customAddToCartValidator) && $customAddToCartValidator['continue'] === false){
+
+            $return = [];
+            $return['continue'] = false;
+
+            $message = data_get($customAddToCartValidator, 'message');
+            if($message){
+                $return['message'] = $message;
+            }
+
+            return $return;
+        }
+    }
+
+    // Overrideable validation
+    public function customAddToCartValidator()
+    {
     }
 
     public function override_show_post($id, $request)
@@ -169,7 +190,12 @@ class AddToCartManager extends NikuPosts
     {
         $onCheck = $this->validateCreate($request);
         if($onCheck['continue'] === false){
-            return $this->abort('You are not authorized to do this.');
+            if(array_key_exists('message', $onCheck)){
+                $message = $onCheck['message'];
+            } else {
+                $message = 'You are not authorized to do this.';
+            }
+            return $this->abort($message);
         }
 
         // Receive the cart instance
@@ -185,34 +211,9 @@ class AddToCartManager extends NikuPosts
             $quantity = 1;
         }
 
+        // If the product is a singular product, that means we need to create a new model for each product
+        // instead of updating the quantity of the product.
         if($this->singularProduct === true){
-
-            // Lets check if the product is already in the cart
-            $cartProduct = $cart->posts()->where([
-                ['post_type', '=', 'shoppingcart-products'],
-                ['post_name', '=', $product->post_name],
-            ])->with('postmeta')->first();
-
-            // If it does not exist yet, lets create it with the basic information
-            if(!$cartProduct){
-                $cartProduct = new NikuPosts;
-                $cartProduct->post_type = 'shoppingcart-products';
-                $cartProduct->post_title = $product->post_title;
-                $cartProduct->post_name = $product->post_name;
-                $cartProduct->template = $product->template;
-                $cartProduct->save();
-
-                // Lets attach the product to the cart
-                $cartProduct->taxonomies()->attach($cart);
-            }
-
-            $quantity = $cartProduct->getMeta('quantity') + $quantity;
-
-            $toSave = [];
-            $toSave['quantity'] = $quantity;
-            $cartProduct->saveMetas($toSave);
-
-        } else {
 
             $cartProduct = new NikuPosts;
             $cartProduct->post_type = 'shoppingcart-products';
@@ -221,22 +222,49 @@ class AddToCartManager extends NikuPosts
             $cartProduct->template = $product->template;
             $cartProduct->save();
 
-            // Lets attach the product to the cart
             $cartProduct->taxonomies()->attach($cart);
 
-            $toSave = [];
-            $toSave['quantity'] = $quantity;
-            $cartProduct->saveMetas($toSave);
+        // If not a singlar product
+        } else {
+
+            // Lets check if the product is already in the cart
+            $cartProduct = $cart->posts()->where([
+                ['post_type', '=', 'shoppingcart-products'],
+                ['post_name', '=', $product->post_name],
+            ])->with('postmeta')->first();
+            if(!$cartProduct){
+                $cartProduct = new NikuPosts;
+
+                $cartProduct->post_type = 'shoppingcart-products';
+                $cartProduct->post_title = $product->post_title;
+                $cartProduct->post_name = $product->post_name;
+                $cartProduct->template = $product->template;
+                $cartProduct->save();
+
+                $cartProduct->taxonomies()->attach($cart);
+
+            } else {
+
+                $cartProduct->post_type = 'shoppingcart-products';
+                $cartProduct->post_title = $product->post_title;
+                $cartProduct->post_name = $product->post_name;
+                $cartProduct->template = $product->template;
+                $cartProduct->save();
+
+            }
+
+            $quantity = $cartProduct->getMeta('quantity') + $quantity;
         }
+
+        // Lets append the save values
+        $toSave = [];
+        $toSave['quantity'] = $quantity;
 
         $this->helpers->savePostMetaToDatabase($request->all(), $this, $cartProduct);
 
-        // Lets calculate the total price based on the new quantity
-        $singlePrice = number_format($product->getMeta('price'), 2, '.', '');
-        $totalPrice = number_format($quantity * $product->getMeta('price'), 2, '.', '');
-
-        $toSave['price_single'] = $singlePrice;
-        $toSave['price_total'] = $totalPrice;
+        $getPrice = $this->get_price($product, $quantity);
+        $toSave['price_single'] = $getPrice->price_single;
+        $toSave['price_total'] = $getPrice->price_total;
 
         $cartProduct->saveMetas($toSave);
 
@@ -247,5 +275,16 @@ class AddToCartManager extends NikuPosts
     		'message' => 'Succesvol toegevoegd.',
     		'action' => 'create',
     	], 200);
+    }
+
+    public function get_price($product, $quantity)
+    {
+        $singlePrice = number_format($product->getMeta('price'), 2, '.', '');
+        $totalPrice = number_format($quantity * $product->getMeta('price'), 2, '.', '');
+
+        return (object) [
+            'price_single' => $singlePrice,
+            'price_total' => $totalPrice,
+        ];
     }
 }

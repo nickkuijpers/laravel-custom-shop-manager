@@ -133,7 +133,7 @@ class ShoppingcartManager extends NikuPosts
         $configTemplate = $this->GetProductTemplate($cartProduct->template);
 
         // Validating if we can update the quantity
-        if($configTemplate->singularity){
+        if($configTemplate->singularProduct === true){
             return $this->abort('The quantity of this product cannot be updated.');
         }
 
