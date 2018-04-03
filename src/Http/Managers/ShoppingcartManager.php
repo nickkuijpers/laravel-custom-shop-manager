@@ -38,7 +38,7 @@ class ShoppingcartManager extends NikuPosts
 
         'template' => [
             'single' => [
-                'enable_title' => true,
+                'enable_title' => false,
                 'page_title' => 'Winkelwagens',
 
                 'enable_button' => false,
@@ -87,19 +87,19 @@ class ShoppingcartManager extends NikuPosts
             'item_identifier' => 'required',
         ])->validate();
 
-        $cart = $this->getCart($request->cart_identifier);
+        $cart = $this->fetchCart($request->cart_identifier);
         if(empty($cart)){
             return $this->abort('The shoppingcart could not be found.', 422);
         }
 
-        $product = $this->getSingleCartProduct($cart, $request->item_identifier);
+        $product = $this->fetchSingleCartProduct($cart, $request->item_identifier);
         if(!$product){
             return $this->abort('The product could not be found or is already deleted.', 422);
         }
 
         $product->delete();
 
-        $configTemplate = $this->GetProductTemplate($product->template);
+        $configTemplate = $this->fetchProductTemplate($product->template);
         if(!empty($configTemplate)){
             $this->triggerEvent('item_deleted_from_cart', $configTemplate, [
                 'cart' => $cart,
@@ -110,27 +110,39 @@ class ShoppingcartManager extends NikuPosts
         return (new ShowPostController)->init($request, 'shoppingcart', $request->cart_identifier);
     }
 
+    public function on_show_event($postTypeModel, $postId, $postmeta)
+    {
+        $postModel = NikuPosts::where([
+            ['id', '=', $postId]
+        ])->with('postmeta')->first();
+
+        // Resetting the errors on output after flashing it to the front-end.
+        $toSave = [];
+        $toSave['errors'] = '';
+        $postModel->saveMetas($toSave);
+    }
+
     public function edit_custom_post_update_quantity($request)
     {
         Validator::make($request->all(), [
             'cart_identifier' => 'required',
             'item_identifier' => 'required',
-            'item_quantity' => 'integer',
+            'quantity' => 'required|integer',
         ])->validate();
 
-        $cart = $this->getCart($request->cart_identifier);
+        $cart = $this->fetchCart($request->cart_identifier);
         if(empty($cart)){
             return $this->abort('The shoppingcart could not be found.', 422);
         }
 
         // Lets validate if the product is available and active
-        $cartProduct = $this->getSingleCartProduct($cart, $request->item_identifier);
+        $cartProduct = $this->fetchSingleCartProduct($cart, $request->item_identifier);
         if(!$cartProduct){
             return $this->abort('The product could not be found or is already deleted.', 422);
         }
 
         // Receiving the config template
-        $configTemplate = $this->GetProductTemplate($cartProduct->template);
+        $configTemplate = $this->fetchProductTemplate($cartProduct->template);
 
         // Validating if we can update the quantity
         if($configTemplate->singularProduct === true){
@@ -201,11 +213,11 @@ class ShoppingcartManager extends NikuPosts
             'post_name' => 'required',
         ])->validate();
 
-        $product = $this->getProduct($request->post_name);
+        $product = $this->fetchProduct($request->post_name);
 
         // If the product does not exist, we log it into the database so we can add it later
         if(!$product){
-            $unknownProduct = $this->getUnknownProduct($request->post_name);
+            $unknownProduct = $this->fetchUnknownProduct($request->post_name);
             if(!$unknownProduct){
                 $unknownProduct = new NikuPosts;
                 $unknownProduct->post_type = 'unknown-products';
@@ -218,7 +230,7 @@ class ShoppingcartManager extends NikuPosts
         }
 
         // Lets get the add to cart product type configuration file
-        $cartConfig = $this->GetProductTemplate($product->template);
+        $cartConfig = $this->fetchProductTemplate($product->template);
         if(!$cartConfig){
             return $this->abort('The template of the product is not available.');
         }
@@ -239,18 +251,18 @@ class ShoppingcartManager extends NikuPosts
             'item_quantity' => 'integer',
         ])->validate();
 
-        $cart = $this->getCart($request->cart_identifier);
+        $cart = $this->fetchCart($request->cart_identifier);
         if(empty($cart)){
             return $this->abort('The shoppingcart could not be found.', 422);
         }
 
-        $product = $this->getProduct($request->product_identifier);
+        $product = $this->fetchProduct($request->product_identifier);
         if(!$product){
             return $this->abort('The product could not be found or is inactive.', 422);
         }
 
         // Receiving the product cart configuration template
-        $configTemplate = $this->GetProductTemplate($product->template);
+        $configTemplate = $this->fetchProductTemplate($product->template);
         if($configTemplate){
 
             // If the configurations are at the add to cart page, we need to add some validation
@@ -395,7 +407,7 @@ class ShoppingcartManager extends NikuPosts
         }
 
         // Lets requery the item so we get the updated version
-        $cartProduct = $this->getSingleCartProduct($cart, $cartProduct->id);
+        $cartProduct = $this->fetchSingleCartProduct($cart, $cartProduct->id);
 
         if(!empty($configTemplate)){
             $this->triggerEvent('item_added_to_cart', $configTemplate, [

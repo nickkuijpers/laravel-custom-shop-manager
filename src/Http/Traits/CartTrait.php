@@ -9,7 +9,7 @@ use Niku\Cms\Http\Controllers\cmsController;
 
 trait CartTrait
 {
-    protected function getCart($cartIdentifier)
+    protected function fetchCart($cartIdentifier)
     {
         $cart = NikuPosts::where([
             ['post_type', '=', 'shoppingcart'],
@@ -19,7 +19,7 @@ trait CartTrait
         return $cart;
     }
 
-    protected function getSingleCartProduct($cart, $cartProductIdentifier)
+    protected function fetchSingleCartProduct($cart, $cartProductIdentifier)
     {
         $cartProduct = $cart->where([
             ['post_type', '=', 'shoppingcart-products'],
@@ -29,7 +29,7 @@ trait CartTrait
         return $cartProduct;
     }
 
-    protected function GetProductTemplate($template)
+    protected function fetchProductTemplate($template)
     {
         // Receive the config variable where we have whitelisted all models
         $cartTemplates = config('niku-cart');
@@ -42,7 +42,8 @@ trait CartTrait
         return (new $cartTemplates['templates'][$template]['class']);
     }
 
-    protected function getProduct($productIdentifier)
+
+    protected function fetchProduct($productIdentifier)
     {
         $product = NikuPosts::where([
             ['post_type', '=', 'products'],
@@ -53,7 +54,7 @@ trait CartTrait
         return $product;
     }
 
-    protected function getUnknownProduct($unknownProductIdentifier)
+    protected function fetchUnknownProduct($unknownProductIdentifier)
     {
         $unknownProduct = NikuPosts::where([
             ['post_type', '=', 'unknown-products'],
@@ -63,15 +64,20 @@ trait CartTrait
         return $unknownProduct;
     }
 
-    public function abort($message = 'Not authorized.')
-    {
-        return response()->json([
-            'code' => 'error',
-            'errors' => [0 => [$message]],
-        ], 422);
-    }
+    public function abort($message = 'Not authorized.', $config = '', $code = 'error')
+	{
+		return response()->json([
+			'code' => $code,
+			'errors' => [
+				$code => [
+					0 => $message,
+				],
+			],
+			'config' => $config,
+		], 430);
+	}
 
-    public function getCustomFieldsByLocation($location, $postTypeModel)
+    public function fetchCustomFieldsByLocation($location, $postTypeModel)
     {
         $validations = [];
         foreach($postTypeModel->view as $key => $value){
@@ -123,7 +129,7 @@ trait CartTrait
         return $validations;
     }
 
-    public function getValidationsByLocation($location, $postTypeModel)
+    public function fetchValidationsByLocation($location, $postTypeModel)
     {
         $validations = [];
         foreach($postTypeModel->view as $key => $value){
@@ -179,4 +185,8 @@ trait CartTrait
         return $validations;
     }
 
+    public function validateAllProducts($cart)
+    {
+        dd($cart);
+    }
 }

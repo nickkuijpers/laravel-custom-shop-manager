@@ -5,7 +5,9 @@ namespace Niku\Cart\Http\Managers;
 use Validator;
 use Illuminate\Http\Request;
 use Niku\Cms\Http\NikuPosts;
+use Illuminate\Validation\Rule;
 use Niku\Cart\Http\Traits\CartTrait;
+use App\Application\Custom\Models\User;
 use Niku\Cms\Http\Controllers\cmsController;
 
 class AddToCartManager extends NikuPosts
@@ -18,7 +20,11 @@ class AddToCartManager extends NikuPosts
     public $view;
     public $helpers;
 
-    public $getPostByPostName = true;
+    public $getPostByPostName = false;
+
+    // Enable single field saving, creation must be skipped.
+    public $enableAllSpecificFieldsUpdate = true;
+    public $excludeSpecificFieldsFromUpdate = [];
 
     // The label of the custom post type
 	public $label = 'Checkout';
@@ -34,6 +40,7 @@ class AddToCartManager extends NikuPosts
     public $makePostNameRandom = true;
 
      public $config = [
+
         'back_to_previous_page' => false,
         'disable_overview_button' => true,
         'link_to_edit_post_type' => 'step4',
@@ -86,7 +93,7 @@ class AddToCartManager extends NikuPosts
             'cart_identifier' => 'required',
         ])->validate();
 
-        $cartModel = $this->getCart($request->cart_identifier);
+        $cartModel = $this->fetchCart($request->cart_identifier);
         if(!$cartModel){
             return [
                 'continue' => false,
@@ -95,15 +102,15 @@ class AddToCartManager extends NikuPosts
         }
 
         // Check custom validations
-        $validationRules = $this->getValidationsByLocation('addtocart', $this);
+        $validationRules = $this->fetchValidationsByLocation('addtocart', $this);
         Validator::make($request->all(), $validationRules)->validate();
 
         // Get the product
-        $product = $this->getProduct($request->post_name);
+        $product = $this->fetchProduct($request->post_name);
 
         // If the product does not exist, we log it into the database so we can validate it later
         if(!$product){
-            $unknownProduct = $this->getUnknownProduct($request->post_name);
+            $unknownProduct = $this->fetchUnknownProduct($request->post_name);
             if(!$unknownProduct){
                 $unknownProduct = new NikuPosts;
                 $unknownProduct->post_type = 'unknown-products';
@@ -141,9 +148,19 @@ class AddToCartManager extends NikuPosts
 
     public function override_show_post($id, $request)
     {
+        Validator::make($request->all(), [
+            'type' => [
+                'required',
+                Rule::in([
+                    'addtocart',
+                    'configuration'
+                ]),
+            ],
+        ])->validate();
+
         $collection = [];
 
-        $customFields = $this->getCustomFieldsByLocation('addtocart', $this);
+        $customFields = $this->fetchCustomFieldsByLocation($request->type, $this);
 
         $collection['templates']['default']['customFields'] = $customFields;
 
@@ -154,24 +171,21 @@ class AddToCartManager extends NikuPosts
                  $toMerge = [];
             break;
             default:
-                $post = User::where([
+                $post = NikuPosts::where([
                     [ 'id' , '=', $id]
-                ])->with('meta')->first();
+                ])->with('postmeta')->first();
                 $collection['post'] = $post;
-                $toMerge = [
-                    'first_name' => [
-                        'value' => $post->first_name
-                    ],
-                    'last_name' => [
-                        'value' => $post->last_name
-                    ],
-                    'email' => [
-                        'value' => $post->email
-                    ],
-                    'address' =>[
-                      'value' => $post->getMeta('address')
-                    ]
+
+                $toMerge = [];
+
+                $toMerge['post_title'] = [
+                    'value' => $post->post_title,
                 ];
+
+                foreach($post->postmeta as $postmetaKey => $postmetaValue){
+                    $toMerge[$postmetaValue->meta_key]['value'] = $postmetaValue->meta_value;
+                }
+
             break;
         }
 
@@ -180,7 +194,7 @@ class AddToCartManager extends NikuPosts
 
         unset($collection['templates']['listing']);
 
-        return $collection;
+        return response()->json($collection);
     }
 
     /**
@@ -199,10 +213,10 @@ class AddToCartManager extends NikuPosts
         }
 
         // Receive the cart instance
-        $cart = $this->getCart($request['cart_identifier']);
+        $cart = $this->fetchCart($request['cart_identifier']);
 
         // Receive the product instance
-        $product = $this->getProduct($request['post_name']);
+        $product = $this->fetchProduct($request['post_name']);
 
         // // Lets validate if we have a quantity in the request
         if(!empty($request['quantity'])){
@@ -214,6 +228,9 @@ class AddToCartManager extends NikuPosts
         // If the product is a singular product, that means we need to create a new model for each product
         // instead of updating the quantity of the product.
         if($this->singularProduct === true){
+
+            // Setting the quantity to one because it is a singular product
+            $quantity = 1;
 
             $cartProduct = new NikuPosts;
             $cartProduct->post_type = 'shoppingcart-products';
@@ -262,7 +279,7 @@ class AddToCartManager extends NikuPosts
 
         $this->helpers->savePostMetaToDatabase($request->all(), $this, $cartProduct);
 
-        $getPrice = $this->get_price($product, $quantity);
+        $getPrice = $this->fetchPrice($product, $quantity);
         $toSave['price_single'] = $getPrice->price_single;
         $toSave['price_total'] = $getPrice->price_total;
 
@@ -277,7 +294,7 @@ class AddToCartManager extends NikuPosts
     	], 200);
     }
 
-    public function get_price($product, $quantity)
+    public function fetchPrice($product, $quantity)
     {
         $singlePrice = number_format($product->getMeta('price'), 2, '.', '');
         $totalPrice = number_format($quantity * $product->getMeta('price'), 2, '.', '');
