@@ -19,6 +19,16 @@ trait CartTrait
         return $cart;
     }
 
+    protected function fetchCartById($cartIdentifier)
+    {
+        $cart = NikuPosts::where([
+            ['post_type', '=', 'shoppingcart'],
+            ['id', '=', $cartIdentifier],
+        ])->with('postmeta')->first();
+
+        return $cart;
+    }
+
     protected function fetchSingleCartProduct($cart, $cartProductIdentifier)
     {
         $cartProduct = $cart->where([

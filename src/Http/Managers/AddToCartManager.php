@@ -146,7 +146,7 @@ class AddToCartManager extends NikuPosts
     {
     }
 
-    public function override_show_post($id, $request)
+    public function override_show_post($id, $request, $postType)
     {
         Validator::make($request->all(), [
             'type' => [
@@ -193,6 +193,11 @@ class AddToCartManager extends NikuPosts
         $collection = $this->helpers->showMutator($this, $collection, $request);
 
         unset($collection['templates']['listing']);
+
+        $collection['instance'] = [
+			'post_type' => $postType,
+			'post_identifier' => $id,
+		];
 
         return response()->json($collection);
     }

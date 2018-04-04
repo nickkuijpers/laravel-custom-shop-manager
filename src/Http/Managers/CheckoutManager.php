@@ -115,7 +115,7 @@ class CheckoutManager extends NikuPosts
 
     }
 
-	public function override_show_post($id, $request)
+	public function override_show_post($id, $request, $postType)
     {
 		$cart = $this->fetchCart($id);
         if(empty($cart)){
@@ -171,32 +171,80 @@ class CheckoutManager extends NikuPosts
 		// Unset unrequired items
         unset($collection['templates']['listing']);
 
+		$collection['instance'] = [
+			'post_type' => $postType,
+			'post_identifier' => $id,
+		];
+
         return response()->json($collection);
     }
 
 	// /**
 	//  * Doing validations before being able to checkout
 	//  */
-	// public function on_edit_check($postTypeModel, $postId, $request)
-	// {
-	// 	$cart = $this->getCart($postId);
-	// 	if(empty($cart)){
-	// 		return $this->abort('The shoppingcart could not be found.', 422);
-	// 	}
+	public function on_check_check($postTypeModel, $postId, $request)
+	{
+		$cart = $this->fetchCartbyId($postId);
+		if(empty($cart)){
+			return [
+				'continue' => false,
+				'message' => [
+					'errors' => [
+						0 => 'There is no cart available',
+					]
+				],
+			];
+		}
 
-	// 	$items = $this->getAllCartProducts($cart);
-	// 	if($items->isEmpty()){
-	// 		return $this->abort('There are no items in the shoppingcart.', 422);
-	// 	}
+		$cartItemsCount = $cart->posts()->where([
+            ['post_type', '=', 'shoppingcart-products']
+		])->with('postmeta')->count();
 
-	// 	$validateProducts = $this->validateProducts($items);
-	// }
+		if($cartItemsCount === 0){
+			return [
+				'continue' => false,
+				'message' => [
+					'errors' => [
+						0 => 'There are no products in the cart'
+					]
+				],
+			];
+		}
+
+		// Need to check if all the products have succeeded the validations
+		$onCheck = $this->validateShow($cart->post_name, $request, $cart);
+        if($onCheck['continue'] === false){
+            if(array_key_exists('message', $onCheck)){
+                $message = $onCheck['message'];
+            } else {
+                $message = 'You are not authorized to do this.';
+            }
+
+			$toSave = [
+				'errors' => json_encode($onCheck['errors'])
+			];
+			$cart->saveMetas($toSave);
+
+			return [
+				'continue' => false,
+				'message' => [
+					'errors' => [
+						0 => 'Not all the required configurations are filled in.'
+					]
+				],
+			];
+		}
+
+		// Lets check if the payment methods is filled in
+		Validator::make($request, [
+			'payment_method' => 'required',
+		])->validate();
+	}
 
 	// public function override_edit_response($postId, $request, $response)
 	// {
-	// 	$cart = $this->getCart($postId);
-	// 	$items = $this->getAllCartProducts($cart);
-
+	// 	$cart = $this->fetchCart($postId);
+	// 	$items = $this->fetchAllCartProducts($cart);
 
 	// 	$title = '';
 	// 	if(!empty($checkoutFields) && !empty($checkoutFields->postTitle)){
