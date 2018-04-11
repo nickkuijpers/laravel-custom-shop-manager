@@ -7,9 +7,9 @@ use Niku\Cms\Http\NikuTaxonomies;
 use Niku\Cart\Http\Controllers\CartMutatorController;
 
 class ShoppingcartMutator extends CartMutatorController
-{	  	    
-    public function out($customField, $collection, $key, $postTypeModel, $holdValue, $request)    
-    {             
+{
+    public function out($customField, $collection, $key, $postTypeModel, $holdValue, $request)
+    {
         $postId = data_get($collection, 'post.id');
         if(!$postId){
             return $customField;
@@ -20,39 +20,15 @@ class ShoppingcartMutator extends CartMutatorController
             ['id', '=', $postId],
         ])->with('postmeta')->first();
 
-        $cartItems = $cart->posts()->where([
-            ['post_type', '=', 'shoppingcart-products']
-        ])->with('postmeta')->get();
+        $mutatedCart = $this->fetchMutatedCart($cart);
 
-        $items = [];
-        $priceTotal = 0;
-
-        foreach($cartItems as $key => $value){
-
-            $productModelConfig = $this->GetProductTemplate($value->template);               
-
-            $items[$key] = [                
-                'id' => $value->id,
-                'post_title' => $value->post_title,
-                'post_name' => $value->post_name,
-
-                // Pricing and quantity details
-                'price_single' => number_format($value->getMeta('price_single'), 2, ',', ''),
-                'quantity' => (integer) number_format($value->getMeta('quantity'), 0, '.', ''),
-                'price_total' => number_format($value->getMeta('price_total'), 2, '.', ''),                
-                'display_quantity' => $productModelConfig->disableQuantity,                
-            ];
-
-            // Add the price
-            $priceTotal += number_format($value->getMeta('price_total'), 2, '.', ''); 
-
+        foreach($mutatedCart as $key => $value){
+            $customField[$key] = $value;
         }
 
-        $customField['items'] = $items;
-        $customField['price_total'] = number_format($priceTotal, 2, ',', '');
         $customField['postIdentifier'] = $cart->post_name;
         $customField['value'] = $holdValue;
 
-        return $customField;   
-    }    
+        return $customField;
+    }
 }
