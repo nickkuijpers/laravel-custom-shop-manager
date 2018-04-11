@@ -435,4 +435,9 @@ class ShoppingcartManager extends NikuPosts
             $postTypeModel->$action($postTypeModel, $post, $postmeta);
         }
     }
+
+    public function getTotalPrices($cart)
+    {
+
+    }
 }

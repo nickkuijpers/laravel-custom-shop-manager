@@ -3,536 +3,385 @@
 namespace App\Application\Custom\Cart\Checkout;
 
 use Validator;
-use Niku\Cms\Http\NikuPosts;
 use Illuminate\Http\Request;
+use Niku\Cms\Http\NikuPosts;
+use Niku\Cart\Http\Managers\CheckoutManager;
 use Niku\Cms\Http\Controllers\cmsController;
 
-class Checkout extends NikuPosts
+class Checkout extends CheckoutManager
 {
-	// The label of the custom post type
-	public $label = 'Checkout';
+    public $enableAllSpecificFieldsUpdate = true;
+    public $excludeSpecificFieldsFromUpdate = [];
 
-    // Define the custom post type
-	public $identifier = 'shoppingcart';
-
-	// Users can only view their own posts when this is set to true
-    public $userCanOnlySeeHisOwnPosts = false;
-
-    public $disableDefaultPostName = true;    
-    public $disableSanitizingPostName = true;
-    public $makePostNameRandom = true;
-
-    public $view;
-    public $helpers;
-
-    public $getPostByPostName = true;
- 
-    public $config = [
-        'back_to_previous_page' => false,
-        'disable_overview_button' => true,        
-        'link_to_edit_post_type' => 'step4',
-        'created_at_post_type' => 'step4',
-        'redirect_after_created' => 'step4',
-        'redirect_after_editted_posttype' => 'step4',
-        'redirect_after_editted_name' => 'step4',
-
-        'template' => [
-            'single' => [
-                'enable_title' => true,                
-                'page_title' => 'Winkelwagens',
-
-                'enable_button' => false,
-                'link_back_to_listing' => [
-                    'name' => 'step4',
-                    'params' => [
-                        'post_type' => 'step4',
-                    ],
-                ],
-                'redirect_after_created_link' => [
-                    'name' => 'step4',
-                    'post_type' => 'step4',
-                    'enable' => true,
-                ],  
-                'redirect_after_editted_link' => [
-                    'name' => 'step4',
-                    'post_type' => 'step4',
-                    'enable' => true,
-                ], 
-            ],
-            'list' => [
-                'enable' => false,
-                'page_title' => 'Woningen',
-                'link_create_new_post' => [
-                    'name' => 'superadminSingle',
-                    'params' => [
-                        'post_type' => 'woningen',
-                        'type' => 'new',
-                        'id' => 0,
-                    ],
-                ],
-            ],
-        ],
-    ];
-
-    public function __construct()
-    {      
-        $this->helpers = new cmsController;  
-        $this->view = $this->view();
-    }
-    
 	// Setting up the template structure
     public function view()
     {
     	return [
     		'default' => [
-                
+
                 'label' => 'Afrekenen',
                 'description' => 'Vult u de benodigde gegevens in',
                 'css_class_customfields_wrapper' => 'col-md-9',
-    
+
                 'customFields' => [
-    
-                    'contactgegevens_title' => [
-                        'label' => 'Contactgegegevens',
-                        'component' => 'niku-cms-title-customfield',
-                        'css_class_row_wrapper' => 'col-md-12 col-sm-12',
-                        'css_class_title_wrapper' => 'col-md-12',
-                        'css_class_title' => 'h4',
-                        'saveable' => false,                        
-                    ],
-    
-                    'company' => [
-                        'label' => 'Naam bedrijf',
-                        'type' => 'text',
-                        'value' => '',
-                        'component' => 'niku-cms-text-customfield',
-                        'css_class_row_wrapper' => 'col-md-12 col-sm-12',
-                        'css_class_label' => 'col-md-12',
-                        'css_class_input_wrapper' => 'col-md-12',
-                        'validation' => 'required',
-                    ],
-    
-                    'aanhef' => [
-                        'label' => 'Aanhef',
-                        'type' => 'text',
-                        'value' => 'dhr.',
-                        'component' => 'niku-cms-select-customfield',
-                        'options' => [
-                            'dhr.' => 'Dhr.',
-                            'mevr.' => 'Mevr.',
-                        ],
-                        'css_class_row_wrapper' => 'col-md-6 col-sm-6',
-                        'css_class_label' => 'col-md-12',
-                        'css_class_input_wrapper' => 'col-md-12',
-                        'validation' => 'required',
-                    ],
-    
-                    'contact_person' => [
-                        'label' => 'Contactpersoon',
-                        'type' => 'text',
-                        'value' => '',
-                        'component' => 'niku-cms-text-customfield',
-                        'css_class_row_wrapper' => 'col-md-6 col-sm-6',
-                        'css_class_label' => 'col-md-12',
-                        'css_class_input_wrapper' => 'col-md-12',
-                        'validation' => 'required',
-                    ],
-    
-                    'telefoonnummer' => [
-                        'label' => 'Telefoonnummer',
-                        'type' => 'text',
-                        'value' => '',
-                        'component' => 'niku-cms-text-customfield',
-                        'css_class_row_wrapper' => 'col-md-6 col-sm-6',
-                        'css_class_label' => 'col-md-12',
-                        'css_class_input_wrapper' => 'col-md-12',
-                        'validation' => 'required',
-                    ],
-    
-                    'email' => [
-                        'label' => 'E-mailadres',
-                        'type' => 'text',
-                        'value' => '',
-                        'component' => 'niku-cms-text-customfield',
-                        'css_class_row_wrapper' => 'col-md-6 col-sm-6',
-                        'css_class_label' => 'col-md-12',
-                        'css_class_input_wrapper' => 'col-md-12',
-                        'validation' => 'required',
-                    ],
-    
-                    'factuurgegevens_title' => [
-                        'label' => 'Factuurgegevens',
-                        'component' => 'niku-cms-title-customfield',
-                        'css_class_row_wrapper' => 'col-md-12 col-sm-12',
-                        'css_class_title_wrapper' => 'col-md-12',
-                        'css_class_title' => 'h4',
-                    ],
-    
-                    'adres' => [
-                        'label' => 'Adres',
-                        'type' => 'text',
-                        'value' => '',
-                        'component' => 'niku-cms-text-customfield',
-                        'css_class_row_wrapper' => 'col-md-9 col-sm-9',
-                        'css_class_label' => 'col-md-12',
-                        'css_class_input_wrapper' => 'col-md-12',
-                        'validation' => 'required',
-                    ],
-    
-                    'nummer' => [
-                        'label' => 'Nummer',
-                        'type' => 'text',
-                        'value' => '',
-                        'component' => 'niku-cms-text-customfield',
-                        'css_class_row_wrapper' => 'col-md-3 col-sm-3',
-                        'css_class_label' => 'col-md-12',
-                        'css_class_input_wrapper' => 'col-md-12',
-                        'validation' => 'required',
-                    ],
-    
-                    'postcode' => [
-                        'label' => 'Postcode',
-                        'type' => 'text',
-                        'value' => '',
-                        'component' => 'niku-cms-text-customfield',
-                        'css_class_row_wrapper' => 'col-md-4 col-sm-4',
-                        'css_class_label' => 'col-md-12',
-                        'css_class_input_wrapper' => 'col-md-12',
-                        'validation' => 'required',
-                    ],
-    
-                    'plaats' => [
-                        'label' => 'Plaats',
-                        'type' => 'text',
-                        'value' => '',
-                        'component' => 'niku-cms-text-customfield',
-                        'css_class_row_wrapper' => 'col-md-4 col-sm-4',
-                        'css_class_label' => 'col-md-12',
-                        'css_class_input_wrapper' => 'col-md-12',
-                        'validation' => 'required',
-                    ],
-    
-                    'land' => [
-                        'label' => 'Land',
-                        'component' => 'niku-cms-select-customfield',
-                        'css_class_row_wrapper' => 'col-md-4 col-sm-4',
-                        'css_class_label' => 'col-md-12',
-                        'css_class_input_wrapper' => 'col-md-12',
-                        'options' => [
-                            'nl' => 'Nederland',
-                            'be' => 'Belgie',
-                            'de' => 'Duitsland',
-                        ],
-                        'value' => 'nl',
-                        'validation' => 'required',
-                    ],
-    
-                    'btw_nummer' => [
-                        'label' => 'BTW nummer',
-                        'type' => 'text',
-                        'value' => '',
-                        'component' => 'niku-cms-text-customfield',
-                        'css_class_row_wrapper' => 'col-md-12 col-sm-12',
-                        'css_class_label' => 'col-md-12',
-                        'css_class_input_wrapper' => 'col-md-12',
-                        'validation' => '',
-                    ],
-    
-                    'betaalmethode_title' => [
-                        'label' => 'Betaalmethode',
-                        'component' => 'niku-cms-title-customfield',
-                        'css_class_row_wrapper' => 'col-md-12 col-sm-12',
-                        'css_class_title_wrapper' => 'col-md-12',
-                        'css_class_title' => 'h4',
-                    ],
-    
-                    'payment_method' => [
-                        'label' => 'Betaalmethode',
-                        'component' => 'niku-cms-radio-customfield',
-                        'css_class_row_wrapper' => 'col-md-12 col-sm-12',
-                        'css_class_label' => 'col-md-12',
-                        'css_class_input_wrapper' => 'col-md-12',
-                        'options' => [
-                            'ideal' => 'IDEAL',
-                            'sofort' => 'Sofort',
-                        ],
-                        'value' => 'ideal',
-                        'validation' => 'required',
-                    ],
 
-                    'shoppingcart' => [                                                
-                        'validation' => '',
-                        'saveable' => false,                        
-                        'component' => 'niku-cart-shoppingcart-customfield',
-                        'saveable' => false,                               
-                        'main_table_wrapper' => 'margintopmedium',                               
-                        'cart_items_update_api_url' => '',                        
-                        'cart_items_delete_api_url' => '',                        
-                        'mutator' => 'App\Application\Custom\Cart\Mutators\ShoppingcartMutator',  
-                        'to_checkout_button' => false,
-                    ],
-
-                    'betalen' => [
-                        'label' => 'Betalen',
-                        'component' => 'niku-cart-checkout-submit-customfield',                                                                        
-                        'validation' => '',
+                    'title' => [
+                        'component' => 'niku-cart-title-customfield',
                         'saveable' => false,
+                        'value' => 'Afrekenen',
                     ],
+
+                    'form_wrapper' => [
+                        'component' => 'niku-cart-form-wrapper-customfield',
+                        'css_class_row_wrapper' => 'row',
+                        'saveable' => false,
+                        'value' => '',
+                        'customFields' => [
+
+                            'contactgegevens_title' => [
+                                'label' => 'Contactgegegevens',
+                                'component' => 'niku-cms-title-customfield',
+                                'css_class_row_wrapper' => 'col-md-12 col-sm-12',
+                                'css_class_title_wrapper' => 'col-md-12',
+                                'css_class_title' => 'h4',
+                                'saveable' => false,
+                                'value' => '',
+                            ],
+
+                            'company' => [
+                                'label' => 'Naam bedrijf',
+                                'type' => 'text',
+                                'value' => '',
+                                'component' => 'niku-cms-text-customfield',
+                                'css_class_row_wrapper' => 'col-md-12 col-sm-12',
+                                'css_class_label' => 'col-md-12',
+                                'css_class_input_wrapper' => 'col-md-12',
+                                'validation' => 'required',
+                            ],
+
+                            'aanhef' => [
+                                'label' => 'Aanhef',
+                                'type' => 'text',
+                                'value' => 'dhr.',
+                                'component' => 'niku-cms-select-customfield',
+                                'options' => [
+                                    'dhr.' => 'Dhr.',
+                                    'mevr.' => 'Mevr.',
+                                ],
+                                'css_class_row_wrapper' => 'col-md-6 col-sm-6',
+                                'css_class_label' => 'col-md-12',
+                                'css_class_input_wrapper' => 'col-md-12',
+                                'validation' => 'required',
+                            ],
+
+                            'contact_person' => [
+                                'label' => 'Contactpersoon',
+                                'type' => 'text',
+                                'value' => '',
+                                'component' => 'niku-cms-text-customfield',
+                                'css_class_row_wrapper' => 'col-md-6 col-sm-6',
+                                'css_class_label' => 'col-md-12',
+                                'css_class_input_wrapper' => 'col-md-12',
+                                'validation' => 'required',
+                            ],
+
+                            'telefoonnummer' => [
+                                'label' => 'Telefoonnummer',
+                                'type' => 'text',
+                                'value' => '',
+                                'component' => 'niku-cms-text-customfield',
+                                'css_class_row_wrapper' => 'col-md-6 col-sm-6',
+                                'css_class_label' => 'col-md-12',
+                                'css_class_input_wrapper' => 'col-md-12',
+                                'validation' => 'required',
+                            ],
+
+                            'email' => [
+                                'label' => 'E-mailadres',
+                                'type' => 'text',
+                                'value' => '',
+                                'component' => 'niku-cms-text-customfield',
+                                'css_class_row_wrapper' => 'col-md-6 col-sm-6',
+                                'css_class_label' => 'col-md-12',
+                                'css_class_input_wrapper' => 'col-md-12',
+                                'validation' => 'required|email',
+                            ],
+
+                            'factuurgegevens_title' => [
+                                'label' => 'Factuurgegevens',
+                                'component' => 'niku-cms-title-customfield',
+                                'css_class_row_wrapper' => 'col-md-12 col-sm-12',
+                                'css_class_title_wrapper' => 'col-md-12',
+                                'css_class_title' => 'h4',
+                                'value' => '',
+                            ],
+
+                            'adres' => [
+                                'label' => 'Adres',
+                                'type' => 'text',
+                                'value' => '',
+                                'component' => 'niku-cms-text-customfield',
+                                'css_class_row_wrapper' => 'col-md-9 col-sm-9',
+                                'css_class_label' => 'col-md-12',
+                                'css_class_input_wrapper' => 'col-md-12',
+                                'validation' => 'required',
+                            ],
+
+                            'nummer' => [
+                                'label' => 'Nummer',
+                                'type' => 'text',
+                                'value' => '',
+                                'component' => 'niku-cms-text-customfield',
+                                'css_class_row_wrapper' => 'col-md-3 col-sm-3',
+                                'css_class_label' => 'col-md-12',
+                                'css_class_input_wrapper' => 'col-md-12',
+                                'validation' => 'required',
+                            ],
+
+                            'postcode' => [
+                                'label' => 'Postcode',
+                                'type' => 'text',
+                                'value' => '',
+                                'component' => 'niku-cms-text-customfield',
+                                'css_class_row_wrapper' => 'col-md-4 col-sm-4',
+                                'css_class_label' => 'col-md-12',
+                                'css_class_input_wrapper' => 'col-md-12',
+                                'validation' => 'required',
+                            ],
+
+                            'plaats' => [
+                                'label' => 'Plaats',
+                                'type' => 'text',
+                                'value' => '',
+                                'component' => 'niku-cms-text-customfield',
+                                'css_class_row_wrapper' => 'col-md-4 col-sm-4',
+                                'css_class_label' => 'col-md-12',
+                                'css_class_input_wrapper' => 'col-md-12',
+                                'validation' => 'required',
+                            ],
+
+                            'land' => [
+                                'label' => 'Land',
+                                'component' => 'niku-cms-select-customfield',
+                                'css_class_row_wrapper' => 'col-md-4 col-sm-4',
+                                'css_class_label' => 'col-md-12',
+                                'css_class_input_wrapper' => 'col-md-12',
+                                'options' => [
+                                    'nl' => 'Nederland',
+                                    'be' => 'Belgie',
+                                    'de' => 'Duitsland',
+                                ],
+                                'value' => 'nl',
+                                'validation' => 'required',
+                            ],
+
+                            'btw_nummer' => [
+                                'label' => 'BTW nummer',
+                                'type' => 'text',
+                                'value' => '',
+                                'component' => 'niku-cms-text-customfield',
+                                'css_class_row_wrapper' => 'col-md-12 col-sm-12',
+                                'css_class_label' => 'col-md-12',
+                                'css_class_input_wrapper' => 'col-md-12',
+                                'validation' => '',
+                            ],
+
+                            'betaalmethode_title' => [
+                                'label' => 'Betaalmethode',
+                                'component' => 'niku-cms-title-customfield',
+                                'css_class_row_wrapper' => 'col-md-12 col-sm-12',
+                                'css_class_title_wrapper' => 'col-md-12',
+                                'css_class_title' => 'h4',
+                                'value' => '',
+                            ],
+
+                            'payment_method' => [
+                                'label' => 'Betaalmethode',
+                                'component' => 'niku-cart-payment-methods-customfield',
+                                'css_class_row_wrapper' => 'col-md-12 col-sm-12',
+                                'css_class_label' => 'col-md-12',
+                                'css_class_input_wrapper' => 'col-md-12',
+                                'mutator' => 'App\Application\Custom\Cart\Mutators\PaymentMethodsMutator',
+                                'value' => '',
+                                'validation' => 'required',
+                            ],
+
+                            'shoppingcart' => [
+                                'validation' => '',
+                                'saveable' => false,
+                                'component' => 'niku-cart-shoppingcart-customfield',
+                                'saveable' => false,
+                                'main_table_wrapper' => 'margintopmedium',
+                                'cart_items_update_api_url' => '',
+                                'cart_items_delete_api_url' => '',
+                                'mutator' => 'App\Application\Custom\Cart\Mutators\ShoppingcartMutator',
+                                'to_checkout_button' => false,
+                                'value' => '',
+                            ],
+
+                            'betalen' => [
+                                'label' => 'Betalen',
+                                'component' => 'niku-cart-checkout-submit-customfield',
+                                'validation' => '',
+                                'api_url' => '',
+                                'mutator' => 'App\Application\Custom\Cart\Mutators\CheckoutUrlApiMutator',
+                                'saveable' => false,
+                                'value' => '',
+                            ],
+
+                        ]
+                    ],
+
                 ],
             ],
-             
-    	];	
+
+    	];
     }
 
-    /**
-     * Doing validations before being able to checkout
-     */
-    public function on_edit_check($postTypeModel, $postId, $request)
-    {        
-        $cart = $this->getCart($postId);
-        if(empty($cart)){
-            return $this->abort('The shoppingcart could not be found.', 422);
-        }
+    // public function override_edit_response($postId, $request, $response)
+    // {
+    //     $cart = $this->getCart($postId);
+    //     $items = $this->getAllCartProducts($cart);
 
-        $items = $this->getAllCartProducts($cart);
-        if($items->isEmpty()){
-            return $this->abort('There are no items in the shoppingcart.', 422);
-        }       
-        
-        $validateProducts = $this->validateProducts($items);
-    }
+    //     $title = '';
+    //     if(!empty($checkoutFields) && !empty($checkoutFields->postTitle)){
+    //         foreach($checkoutFields->postTitle as $postTitle){
+    //             $title .= $request->get($postTitle) . ' ';
+    //         }
+    //         $title = trim($title);
+    //         $cart->post_title = $title;
+    //     }
 
-    public function override_edit_response($postId, $request, $response)
-    {        
-        $cart = $this->getCart($postId);        
-        $items = $this->getAllCartProducts($cart);        
+    //     // Lets move it from the shoppingcart to the order post type
+    //     $cart->post_type = 'orders';
+    //     $cart->status = 'in_progress';
+    //     $cart->save();
 
+    //     // Lets recalculate the total price of all the items in the shoppingcart
+    //     $priceTotal = 0;
+    //     foreach($items as $key => $value){
+    //         $priceTotal += number_format($value->getMeta('price_total'), 2, '.', '');
+    //     }
 
-        $title = '';
-        if(!empty($checkoutFields) && !empty($checkoutFields->postTitle)){
-            foreach($checkoutFields->postTitle as $postTitle){
-                $title .= $request->get($postTitle) . ' ';
-            }
-            $title = trim($title);
-            $cart->post_title = $title;
-        }
+    //     // Lets whitelist the payment method
+    //     switch($request->paymentMethod){
+    //         default:
+    //             $paymentMethod = 'ideal';
+    //         break;
+    //     }
 
-        // Lets move it from the shoppingcart to the order post type
-        $cart->post_type = 'orders';
-        $cart->status = 'in_progress';
-        $cart->save();
+    //     // Save the default requirements of the order and payment information
+    //     $cart->saveMetas([
+    //         'price_total' => $priceTotal,
+    //         'payment_method' => $paymentMethod,
+    //         'payment_status' => 'in_progress',
+    //     ]);
 
-        // Lets recalculate the total price of all the items in the shoppingcart
-        $priceTotal = 0;
-        foreach($items as $key => $value){
-            $priceTotal += number_format($value->getMeta('price_total'), 2, '.', '');
-        }
+    //     // Lets create a customer
+    //     $customer = new NikuPosts;
+    //     $customer->post_type = 'customers';
+    //     $customer->post_title = $title;
+    //     $customer->post_name = $title;
+    //     $customer->save();
 
-        // Lets whitelist the payment method
-        switch($request->paymentMethod){
-            default:
-                $paymentMethod = 'ideal';
-            break;
-        }
+    //     foreach($request->only($checkoutKeys) as $checkoutKey => $checkoutValue){
 
-        // Save the default requirements of the order and payment information
-        $cart->saveMetas([
-            'price_total' => $priceTotal,
-            'payment_method' => $paymentMethod,
-            'payment_status' => 'in_progress',
-        ]);
+    //         // Saving it to the database
+    //         $object = [
+    //             'meta_key' => $checkoutKey,
+    //             'meta_value' => $checkoutValue,
+    //             'group' => 'checkout',
+    //         ];
 
-        // Lets create a customer
-        $customer = new NikuPosts;
-        $customer->post_type = 'customers';
-        $customer->post_title = $title;
-        $customer->post_name = $title;
-        $customer->save();
+    //         // Update or create the meta key of the post
+    //         $customer->postmeta()->updateOrCreate([
+    //             'meta_key' => $checkoutKey
+    //         ], $object);
 
-        foreach($request->only($checkoutKeys) as $checkoutKey => $checkoutValue){
+    //     }
 
-            // Saving it to the database
-            $object = [
-                'meta_key' => $checkoutKey,
-                'meta_value' => $checkoutValue,
-                'group' => 'checkout',
-            ];
+    //     // Lets attach the customer to the order
+    //     $customer->taxonomies()->attach($cart);
 
-            // Update or create the meta key of the post
-            $customer->postmeta()->updateOrCreate([
-                'meta_key' => $checkoutKey
-            ], $object);
+    //     $this->triggerEvent('order_customer_created', $checkoutFields, [
+    //         'cart' => $cart,
+    //         'customer' => $customer,
+    //     ]);
 
-        }
+    //     // Lets receive the redirect path by the users website config
+    //     $website = $this->getWebsite($websiteId);
+    //     $redirectUrlPath = $website->post_title . $website->getMeta('embed_redirect_path_thankyou');
 
-        // Lets attach the customer to the order
-        $customer->taxonomies()->attach($cart);
+    //     // Lets set some required values
+    //     $redirectUrl = $redirectUrlPath . "?identifier=" . $cart->post_name;
+    //     $webhookUrl = config('app.payment_webhook_url') . "api/cart/" . $website->post_name . "/order/payment/callback?identifier=" . $cart->post_name;
+    //     $description = 'Bestelling ' . $cart->id;
 
-        $this->triggerEvent('order_customer_created', $checkoutFields, [
-            'cart' => $cart,
-            'customer' => $customer,
-        ]);
+    //     $this->triggerEvent('order_created', $checkoutFields, [
+    //         'cart' => $cart,
+    //         'customer' => $customer,
+    //     ]);
 
-        // Lets receive the redirect path by the users website config
-        $website = $this->getWebsite($websiteId);
-        $redirectUrlPath = $website->post_title . $website->getMeta('embed_redirect_path_thankyou');
+    //     // Lets create a Mollie transaction
+    //     try {
 
-        // Lets set some required values
-        $redirectUrl = $redirectUrlPath . "?identifier=" . $cart->post_name;
-        $webhookUrl = config('app.payment_webhook_url') . "api/cart/" . $website->post_name . "/order/payment/callback?identifier=" . $cart->post_name;
-        $description = 'Bestelling ' . $cart->id;
+    //         $paymentMollie = Mollie::api()->payments()->create([
+    //             "amount"      => $priceTotal,
+    //             "description" => $description,
+    //             "redirectUrl" => $redirectUrl,
+    //             "webhookUrl" => $webhookUrl,
+    //         ]);
 
-        $this->triggerEvent('order_created', $checkoutFields, [
-            'cart' => $cart,
-            'customer' => $customer,
-        ]);
+    //         // Lets validate if there is a duplicate transaction id and if so, append it.
+    //         $transactionCount = 1;
 
-        // Lets create a Mollie transaction
-        try {
+    //          // Lets create a Mollie transaction
+    //         $mollie = new NikuPosts;
+    //         $mollie->post_type = 'transactions';
+    //         $mollie->post_title = $description;
+    //         $mollie->post_name = $cart->post_name . '_' . $paymentMollie->id;
+    //         $mollie->save();
 
-            $paymentMollie = Mollie::api()->payments()->create([
-                "amount"      => $priceTotal,
-                "description" => $description,
-                "redirectUrl" => $redirectUrl,
-                "webhookUrl" => $webhookUrl,
-            ]);
+    //         // Lets save the mollie transactions meta
+    //         $mollie->saveMetas([
+    //             'price_total' => $priceTotal,
+    //             'price_total_received_by_payment_provider' => $paymentMollie->amount,
+    //             'ip_address' => $request->ip(),
+    //             'payment_identifier' => $paymentMollie->id,
+    //             'payment_status' => $paymentMollie->status,
+    //             'payment_created' => $paymentMollie->createdDatetime,
+    //             'payment_links' => json_encode($paymentMollie->links),
+    //         ]);
 
-            // Lets validate if there is a duplicate transaction id and if so, append it.
-            $transactionCount = 1;
+    //         // Lets attach the customer to the order
+    //         $mollie->taxonomies()->attach($cart);
 
-             // Lets create a Mollie transaction
-            $mollie = new NikuPosts;
-            $mollie->post_type = 'transactions';
-            $mollie->post_title = $description;
-            $mollie->post_name = $cart->post_name . '_' . $paymentMollie->id;
-            $mollie->save();
+    //         $this->triggerEvent('order_create_payment_transaction_succeed', $checkoutFields, [
+    //             'cart' => $cart,
+    //             'transaction' => $mollie,
+    //         ]);
 
-            // Lets save the mollie transactions meta
-            $mollie->saveMetas([
-                'price_total' => $priceTotal,
-                'price_total_received_by_payment_provider' => $paymentMollie->amount,
-                'ip_address' => $request->ip(),
-                'payment_identifier' => $paymentMollie->id,
-                'payment_status' => $paymentMollie->status,
-                'payment_created' => $paymentMollie->createdDatetime,
-                'payment_links' => json_encode($paymentMollie->links),
-            ]);
+    //         return response()->json([
+    //             'status' => 'succesful',
+    //             'redirect_url' => $paymentMollie->links->paymentUrl
+    //         ]);
+    //     }
+    //     //catch exception
+    //     catch( \Mollie_API_Exception $e) {
 
-            // Lets attach the customer to the order
-            $mollie->taxonomies()->attach($cart);
+    //         $this->triggerEvent('order_create_payment_transaction_failure', $checkoutFields, [
+    //             'cart' => $cart,
+    //             'error' => $e->getMessage(),
+    //         ]);
 
-            $this->triggerEvent('order_create_payment_transaction_succeed', $checkoutFields, [
-                'cart' => $cart,
-                'transaction' => $mollie,
-            ]);
+    //         // Need to create an event order has failed
+    //         return response()->json([
+    //             'status' => 'failed',
+    //             'message' =>  'Message: ' .$e->getMessage(),
+    //             'redirect_url' => $redirectUrl
+    //         ], 500);
+    //     }
 
-            return response()->json([
-                'status' => 'succesful',
-                'redirect_url' => $paymentMollie->links->paymentUrl
-            ]);
-        }
-        //catch exception
-        catch( \Mollie_API_Exception $e) {
+    // }
 
-            $this->triggerEvent('order_create_payment_transaction_failure', $checkoutFields, [
-                'cart' => $cart,
-                'error' => $e->getMessage(),
-            ]);
-
-            // Need to create an event order has failed
-            return response()->json([
-                'status' => 'failed',
-                'message' =>  'Message: ' .$e->getMessage(),
-                'redirect_url' => $redirectUrl
-            ], 500);
-        }
-
-    }
-
-    protected function getCart($cartIdentifier)
-    {
-        $cart = NikuPosts::where([
-            ['post_type', '=', 'shoppingcart'],
-            ['id', '=', $cartIdentifier],
-        ])->with('postmeta')->first();
-
-        return $cart;
-    }
-
-    protected function getAllCartProducts($cart)
-    {
-        $cartProducts = $cart->posts()->where([
-            ['post_type', '=', 'shoppingcart-products']
-        ])->with('postmeta')->get();
-
-        return $cartProducts;
-    }
-    
-    protected function GetProductTemplate($template)
-    {
-        // Receive the config variable where we have whitelisted all models
-        $cartTemplates = config('niku-cart');
-
-        // Validating if the model exists in the array
-        if(!array_key_exists($template, $cartTemplates['templates'])){
-            return false;
-        }
-
-        return (new $cartTemplates['templates'][$template]['class']);
-    }
-
-    protected function validateProducts($items)
-    {
-        // Validaitng all the product configurations
-        $validationRules = [];
-        $productRequest = new Request;
-
-        foreach($items as $productValue){
-
-            $productTemplate = $this->GetProductTemplate($productValue->template);
-            if($productTemplate){
-
-                $customFields = $productTemplate->view['default']['customFields'];
-                $quantity = (integer) number_format($productValue->getMeta('quantity'), 0, '.', '');
-                $productId = $productValue->id;
-
-                if($productTemplate->configPerQuantity){
-
-                    foreach($customFields as $customKey => $customValue){
-
-                        foreach(range(1, intval($quantity), 1) as $quantity){
-
-                            $newCustomKey = $quantity . '_' . $productId . '_configuration_' . $customKey;
-
-                            $meta = $productValue->postmeta()->where([
-                                ['meta_key', '=', $newCustomKey],
-                            ])->first();
-
-                            $validationRules[$newCustomKey] = $productTemplate->view['default']['customFields'][$customKey]['validation'];
-                            $productRequest[$newCustomKey] = $meta->meta_value;
-                        }
-                    }
-
-                } else {
-
-                    foreach($customFields as $customKey => $customValue){
-
-                        foreach(range(1, 1, 1) as $quantity){
-
-                            $newCustomKey = $quantity . '_' . $productId . '_configuration_' . $customKey;
-
-                            $meta = $productValue->postmeta()->where([
-                                ['meta_key', '=', $newCustomKey],
-                            ])->first();
-
-                            $validationRules[$newCustomKey] = $productTemplate->view['default']['customFields'][$customKey]['validation'];
-                            $productRequest[$newCustomKey] = $meta->meta_value;
-                        }
-                    }
-                }
-            }
-        }
-
-        Validator::make($productRequest->all(), $validationRules)->validate();
-    }
 }
