@@ -10,7 +10,7 @@ class CartMutatorController extends cmsController
 	use CartTrait;
 
 	public $helpers;
-
+	
 	public function __construct()
 	{
 		$this->helpers = new cmsController;

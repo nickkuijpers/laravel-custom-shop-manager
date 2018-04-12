@@ -20,7 +20,7 @@ class CheckoutUrlApiMutator extends CartMutatorController
             ['id', '=', $postId],
         ])->with('postmeta')->first();
         
-        $customField['api_url'] = '/cpm/checkout/check/' . $cart->post_name;
+        $customField['api_url'] = '/cpm/checkout/edit/' . $cart->post_name;
 
         $customField['value'] = $holdValue;
         return $customField;

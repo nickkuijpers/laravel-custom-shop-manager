@@ -4,6 +4,7 @@ namespace App\Application\Custom\Cart\Mutators;
 
 use Niku\Cms\Http\NikuPosts;
 use Niku\Cms\Http\NikuTaxonomies;
+use Niku\Cart\Http\Controllers\CartMutatorController;
 
 class ErrorsMutator extends CartMutatorController
 {	  	

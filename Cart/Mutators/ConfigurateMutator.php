@@ -9,7 +9,7 @@ use Niku\Cart\Http\Controllers\CartMutatorController;
 class ConfigurateMutator extends CartMutatorController
 {	  	        
     public function out($customField, $collection, $key, $postTypeModel, $holdValue, $request)    
-    {                     
+    {                                     
         $postId = data_get($collection, 'post.id');
         if(!$postId){
             return $customField;

@@ -31,6 +31,9 @@ class CheckoutManager extends NikuPosts
 
 	public $getPostByPostName = true;
 
+	public $enableAllSpecificFieldsUpdate = true;    
+	public $excludeSpecificFieldsFromUpdate = [];	
+
 	public $config = [
 		'back_to_previous_page' => false,
 		'disable_overview_button' => true,
@@ -88,9 +91,7 @@ class CheckoutManager extends NikuPosts
     {
 		$continue = true;
 
-		$cartItems = $cart->posts()->where([
-            ['post_type', '=', 'shoppingcart-products']
-		])->with('postmeta')->get();
+		$cartItems = $this->fetchAllCartProducts($cart);
 
 		$errors = [];
 		foreach($cartItems as $cartKey => $cartValue){
@@ -107,21 +108,42 @@ class CheckoutManager extends NikuPosts
 
 		}
 
+		if($continue === true){
+			$message = '';
+		} else {
+			$message = 'U heeft de configuratie benodigdheden niet correct ingevuld.';
+		}
+
 		return [
 			'continue' => $continue,
 			'errors' => $errors,
-			'message' => 'U heeft de configuratie benodigdheden niet correct ingevuld.',
+			'message' => $message,
 		];
 
     }
 
 	public function override_show_post($id, $request, $postType)
-    {
+    {		
+		// Lets validate if authentication is required
+		$authenticationRequired = config('niku-cart.authentication.required');
+		if($authenticationRequired === true){
+			$user = $request->user('api');
+			if(!$user){
+				return response()->json([
+					'code' => 'error',
+					'redirect_to' => [
+						'name' => 'checkout-login',
+					],
+					'errors' => 'You must be authenticated',
+				], 431);
+			}
+		}
+
 		$cart = $this->fetchCart($id);
         if(empty($cart)){
             return $this->abort('The shoppingcart could not be found.', 422);
 		}
-
+		
 		// Lets check if there are any products which have not been passed the configurations yet
 		$onCheck = $this->validateShow($id, $request, $cart);
         if($onCheck['continue'] === false){
@@ -179,67 +201,67 @@ class CheckoutManager extends NikuPosts
         return response()->json($collection);
     }
 
-	// /**
-	//  * Doing validations before being able to checkout
-	//  */
-	public function on_check_check($postTypeModel, $postId, $request)
-	{
-		$cart = $this->fetchCartbyId($postId);
-		if(empty($cart)){
-			return [
-				'continue' => false,
-				'message' => [
-					'errors' => [
-						0 => 'There is no cart available',
-					]
-				],
-			];
-		}
+	/**
+	 * Doing validations before being able to checkout
+	 */
+	// public function on_check_check($postTypeModel, $postId, $request)
+	// {
+	// 	$cart = $this->fetchCartbyId($postId);
+	// 	if(empty($cart)){
+	// 		return [
+	// 			'continue' => false,
+	// 			'message' => [
+	// 				'errors' => [
+	// 					0 => 'There is no cart available',
+	// 				]
+	// 			],
+	// 		];
+	// 	}
 
-		$cartItemsCount = $cart->posts()->where([
-            ['post_type', '=', 'shoppingcart-products']
-		])->with('postmeta')->count();
+	// 	$cartItemsCount = $cart->posts()->where([
+    //         ['post_type', '=', 'shoppingcart-products']
+	// 	])->with('postmeta')->count();
 
-		if($cartItemsCount === 0){
-			return [
-				'continue' => false,
-				'message' => [
-					'errors' => [
-						0 => 'There are no products in the cart'
-					]
-				],
-			];
-		}
+	// 	if($cartItemsCount === 0){
+	// 		return [
+	// 			'continue' => false,
+	// 			'message' => [
+	// 				'errors' => [
+	// 					0 => 'There are no products in the cart'
+	// 				]
+	// 			],
+	// 		];
+	// 	}
 
-		// Need to check if all the products have succeeded the validations
-		$onCheck = $this->validateShow($cart->post_name, $request, $cart);
-        if($onCheck['continue'] === false){
-            if(array_key_exists('message', $onCheck)){
-                $message = $onCheck['message'];
-            } else {
-                $message = 'You are not authorized to do this.';
-            }
+	// 	// Need to check if all the products have succeeded the validations
+	// 	$onCheck = $this->validateShow($cart->post_name, $request, $cart);
+    //     if($onCheck['continue'] === false){
+    //         if(array_key_exists('message', $onCheck)){
+    //             $message = $onCheck['message'];
+    //         } else {
+    //             $message = 'You are not authorized to do this.';
+    //         }
 
-			$toSave = [
-				'errors' => json_encode($onCheck['errors'])
-			];
-			$cart->saveMetas($toSave);
+	// 		$toSave = [
+	// 			'errors' => json_encode($onCheck['errors'])
+	// 		];
+	// 		$cart->saveMetas($toSave);
 
-			return [
-				'continue' => false,
-				'message' => [
-					'errors' => [
-						0 => 'Not all the required configurations are filled in.'
-					]
-				],
-			];
-		}
+	// 		return [
+	// 			'continue' => false,
+	// 			'message' => [
+	// 				'errors' => [
+	// 					0 => 'Not all the required configurations are filled in.'
+	// 				]
+	// 			],
+	// 		];
+	// 	}
 
-		// Lets check if the payment methods is filled in
-		Validator::make($request, [
-			'payment_method' => 'required',
-		])->validate();
-	}
+	// 	// Lets check if the payment methods is filled in
+	// 	Validator::make($request, [
+	// 		'payment_method' => 'required',
+	// 	])->validate();
+	// }
 
 	// public function override_edit_response($postId, $request, $response)
 	// {

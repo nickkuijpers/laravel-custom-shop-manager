@@ -2,7 +2,11 @@
 
 return [
 
-	'config' => [
+    'authentication' => [
+        'required' => true,
+    ],
+
+    'config' => [
         'prices_inclusive_tax' => false,
         'default_tax_group' => 'high',
         'tax_groups' => [
@@ -37,6 +41,10 @@ return [
         'licentie' => [
             'label' => 'Licentie product',
             'class' => App\Application\Custom\Cart\Templates\Complex::class,
+        ],
+        'hosting' => [
+            'label' => 'Hosting',
+            'class' => App\Application\Custom\Cart\Templates\Hosting::class,
         ]
     ],
 
