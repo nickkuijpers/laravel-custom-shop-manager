@@ -124,25 +124,28 @@ class CheckoutManager extends NikuPosts
 
 	public function override_show_post($id, $request, $postType)
     {		
+		$cart = $this->fetchCart($id);
+        if(empty($cart)){
+            return $this->abort('The shoppingcart could not be found.', 422);
+		}
+
 		// Lets validate if authentication is required
 		$authenticationRequired = config('niku-cart.authentication.required');
 		if($authenticationRequired === true){
 			$user = $request->user('api');
 			if(!$user){
+
 				return response()->json([
 					'code' => 'error',
 					'redirect_to' => [
 						'name' => 'checkout-login',
 					],
-					'errors' => 'You must be authenticated',
+					'errors' => [
+						'auth' => ['You must be authenticated'],
+					],
 				], 431);
 			}
-		}
-
-		$cart = $this->fetchCart($id);
-        if(empty($cart)){
-            return $this->abort('The shoppingcart could not be found.', 422);
-		}
+		}		
 		
 		// Lets check if there are any products which have not been passed the configurations yet
 		$onCheck = $this->validateShow($id, $request, $cart);

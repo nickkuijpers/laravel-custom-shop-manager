@@ -335,7 +335,7 @@ trait CartTrait
     }
 
     protected function configurationsRequired($cart, $request)
-    {        
+    {                
         $checkConfigurations = (new Checkout)->override_show_post($cart->post_name, $request, 'shoppingcart');        
         if($checkConfigurations->getStatusCode() == 431) {
             return true;
