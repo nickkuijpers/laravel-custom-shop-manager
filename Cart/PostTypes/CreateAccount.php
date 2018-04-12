@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Application\Custom\Cart\Checkout;
+namespace App\Application\Custom\Cart\PostTypes;
 
 use Validator;
 use Illuminate\Http\Request;
@@ -23,6 +23,14 @@ class CreateAccount extends CreateAccountManager
                 'css_class_customfields_wrapper' => 'col-md-9',
     
                 'customFields' => [
+
+                    'steps' => [                        
+                        'component' => 'niku-cart-steps-customfield',
+                        'saveable' => false,                                                                                   
+                        'value' => 'Afrekenen',         
+                        'mutator' => 'App\Application\Custom\Cart\Mutators\StepsMutator',                                                        
+                        'active' => 1,
+                    ],         
 
                     'title' => [                        
                         'component' => 'niku-cart-title-customfield',
@@ -221,7 +229,7 @@ class CreateAccount extends CreateAccountManager
                                 'component' => 'niku-cart-create-account-submit-customfield',                                                                        
                                 'validation' => '',
                                 'api_url' => '',
-                                'mutator' => 'App\Application\Custom\Cart\Mutators\CreateAccountUrlMutator',  
+                                'mutator' => 'App\Application\Custom\Cart\Mutators\CreateAccount\CreateAccountUrlMutator',  
                                 'saveable' => false,
                                 'value' => '',
                             ],

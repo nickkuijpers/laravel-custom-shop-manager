@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Application\Custom\Cart\Mutators;
+namespace App\Application\Custom\Cart\Mutators\Shoppingcart;
 
 use Niku\Cms\Http\NikuPosts;
 use Niku\Cms\Http\NikuTaxonomies;

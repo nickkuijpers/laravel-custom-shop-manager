@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Application\Custom\Cart\Checkout;
+namespace App\Application\Custom\Cart\PostTypes;
 
 use Niku\Cart\Http\Managers\ShoppingcartManager;
 
@@ -32,7 +32,7 @@ class Shoppingcart extends ShoppingcartManager
                     'submit-button' => [                        
                         'component' => 'niku-cart-submit-button-customfield',
                         'saveable' => false,      
-                        'mutator' => 'App\Application\Custom\Cart\Mutators\ShoppingcartButtonMutator',  
+                        'mutator' => 'App\Application\Custom\Cart\Mutators\Shoppingcart\ShoppingcartButtonMutator',  
                         // 'label' => 'Configureren',                                                        
                         // 'to' => [
                         //     'name' => 'configure',

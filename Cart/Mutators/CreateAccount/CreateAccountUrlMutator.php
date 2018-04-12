@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Application\Custom\Cart\Mutators;
+namespace App\Application\Custom\Cart\Mutators\CreateAccount;
 
 use Niku\Cms\Http\NikuPosts;
 use Niku\Cms\Http\NikuTaxonomies;
 use Niku\Cart\Http\Controllers\CartMutatorController;
 
-class ErrorsMutator extends CartMutatorController
+class CreateAccountUrlMutator extends CartMutatorController
 {	  	
     public function out($customField, $collection, $key, $postTypeModel, $holdValue, $request)    
     {                      
@@ -19,19 +19,10 @@ class ErrorsMutator extends CartMutatorController
             ['post_type', '=', 'shoppingcart'],
             ['id', '=', $postId],
         ])->with('postmeta')->first();
+        
+        $customField['api_url'] = '/cpm/create-account/edit/' . $cart->post_name;
 
-        $value = json_decode($cart->getMeta('errors'), true);                        
-        if(is_array($value) && count($value) >= 1){
-            $customField['showErrors'] = true;
-        } else {
-            $customField['showErrors'] = false;            
-        }
-
-        $cart->saveMetas([
-            'errors' => '',
-        ]);
-
-        $customField['value'] = $value;
+        $customField['value'] = $holdValue;
         return $customField;
     }
 

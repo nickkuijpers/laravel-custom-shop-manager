@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Application\Custom\Cart\Checkout;
+namespace App\Application\Custom\Cart\PostTypes;
 
 use Validator;
 use Illuminate\Http\Request;

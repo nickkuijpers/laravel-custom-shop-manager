@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Application\Custom\Cart\Checkout;
+namespace App\Application\Custom\Cart\PostTypes;
 
 use Niku\Cart\Http\Managers\ConfigurateManager;
 
@@ -14,6 +14,14 @@ class Configurate extends ConfigurateManager
     
                 'customFields' => [
 
+                    'steps' => [                        
+                        'component' => 'niku-cart-steps-customfield',
+                        'saveable' => false,                                                                                   
+                        'value' => 'Afrekenen',         
+                        'mutator' => 'App\Application\Custom\Cart\Mutators\StepsMutator',   
+                        'active' => 2,                                             
+                    ],         
+
                     'title' => [                        
                         'component' => 'niku-cart-title-customfield',
                         'saveable' => false,                                                                                   
@@ -24,24 +32,23 @@ class Configurate extends ConfigurateManager
                         'component' => 'niku-cart-errors-customfield',
                         'saveable' => false,                                                                                   
                         'value' => '',                                           
-                        'mutator' => 'App\Application\Custom\Cart\Mutators\ErrorsMutator',                          
- 
+                        'mutator' => 'App\Application\Custom\Cart\Mutators\ErrorsMutator',                           
                     ],                     
     
                     'configurate' => [                        
                         'component' => 'niku-cart-configurate-customfield',
                         'saveable' => false,       
                         'value' => '',                                                                                            
-                        'mutator' => 'App\Application\Custom\Cart\Mutators\ConfigurateMutator',                          
+                        'mutator' => 'App\Application\Custom\Cart\Mutators\Configurate\ConfigurateMutator',                          
                     ],                     
 
                     'submit-button' => [                        
                         'component' => 'niku-cart-submit-button-customfield',
                         'saveable' => false,      
                         'value' => '',             
-                        'label' => 'Afrekenen',                                                        
+                        'label' => 'Betaalmethode kiezen',                                                        
                         'to' => [
-                            'name' => 'checkout',
+                            'name' => 'payment-method',
                         ],                        
                     ],                     
 

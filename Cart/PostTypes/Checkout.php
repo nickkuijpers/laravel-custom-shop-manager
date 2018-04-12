@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Application\Custom\Cart\Checkout;
+namespace App\Application\Custom\Cart\PostTypes;
 
 use Validator;
 use Illuminate\Http\Request;
@@ -26,6 +26,14 @@ class Checkout extends CheckoutManager
                 'css_class_customfields_wrapper' => 'col-md-9',
     
                 'customFields' => [
+
+                    'steps' => [                        
+                        'component' => 'niku-cart-steps-customfield',
+                        'saveable' => false,                                                                                   
+                        'value' => 'Afrekenen',         
+                        'mutator' => 'App\Application\Custom\Cart\Mutators\StepsMutator',                                                        
+                        'active' => 4,
+                    ],                
 
                     'title' => [                        
                         'component' => 'niku-cart-title-customfield',
@@ -54,18 +62,18 @@ class Checkout extends CheckoutManager
                                 'label' => 'Naam bedrijf',
                                 'type' => 'text',
                                 'value' => '',
-                                'component' => 'niku-cms-text-customfield',
+                                'component' => 'niku-cms-readonly-customfield',
                                 'css_class_row_wrapper' => 'col-md-12 col-sm-12',
                                 'css_class_label' => 'col-md-12',
                                 'css_class_input_wrapper' => 'col-md-12',
-                                'validation' => 'required',
+                                'validation' => '',
                             ],
             
                             'aanhef' => [
                                 'label' => 'Aanhef',
                                 'type' => 'text',
                                 'value' => 'dhr.',
-                                'component' => 'niku-cms-select-customfield',
+                                'component' => 'niku-cms-readonly-customfield',
                                 'options' => [
                                     'dhr.' => 'Dhr.',
                                     'mevr.' => 'Mevr.',
@@ -80,44 +88,44 @@ class Checkout extends CheckoutManager
                                 'label' => 'Voornaam',
                                 'type' => 'text',
                                 'value' => '',
-                                'component' => 'niku-cms-text-customfield',
+                                'component' => 'niku-cms-readonly-customfield',
                                 'css_class_row_wrapper' => 'col-md-4 col-sm-4',
                                 'css_class_label' => 'col-md-12',
                                 'css_class_input_wrapper' => 'col-md-12',
-                                'validation' => 'required',
+                                'validation' => '',
                             ],
 
                             'achternaam' => [
                                 'label' => 'Achternaam',
                                 'type' => 'text',
                                 'value' => '',
-                                'component' => 'niku-cms-text-customfield',
+                                'component' => 'niku-cms-readonly-customfield',
                                 'css_class_row_wrapper' => 'col-md-4 col-sm-4',
                                 'css_class_label' => 'col-md-12',
                                 'css_class_input_wrapper' => 'col-md-12',
-                                'validation' => 'required',
+                                'validation' => '',
                             ],
             
                             'telefoonnummer' => [
                                 'label' => 'Telefoonnummer',
                                 'type' => 'text',
                                 'value' => '',
-                                'component' => 'niku-cms-text-customfield',
+                                'component' => 'niku-cms-readonly-customfield',
                                 'css_class_row_wrapper' => 'col-md-6 col-sm-6',
                                 'css_class_label' => 'col-md-12',
                                 'css_class_input_wrapper' => 'col-md-12',
-                                'validation' => 'required',
+                                'validation' => '',
                             ],
             
                             'email' => [
                                 'label' => 'E-mailadres',
                                 'type' => 'text',
                                 'value' => '',
-                                'component' => 'niku-cms-text-customfield',
+                                'component' => 'niku-cms-readonly-customfield',
                                 'css_class_row_wrapper' => 'col-md-6 col-sm-6',
                                 'css_class_label' => 'col-md-12',
                                 'css_class_input_wrapper' => 'col-md-12',
-                                'validation' => 'required|email',
+                                'validation' => '',
                             ],
             
                             'factuurgegevens_title' => [
@@ -133,49 +141,49 @@ class Checkout extends CheckoutManager
                                 'label' => 'Adres',
                                 'type' => 'text',
                                 'value' => '',
-                                'component' => 'niku-cms-text-customfield',
+                                'component' => 'niku-cms-readonly-customfield',
                                 'css_class_row_wrapper' => 'col-md-9 col-sm-9',
                                 'css_class_label' => 'col-md-12',
                                 'css_class_input_wrapper' => 'col-md-12',
-                                'validation' => 'required',
+                                'validation' => '',
                             ],
             
                             'nummer' => [
                                 'label' => 'Nummer',
                                 'type' => 'text',
                                 'value' => '',
-                                'component' => 'niku-cms-text-customfield',
+                                'component' => 'niku-cms-readonly-customfield',
                                 'css_class_row_wrapper' => 'col-md-3 col-sm-3',
                                 'css_class_label' => 'col-md-12',
                                 'css_class_input_wrapper' => 'col-md-12',
-                                'validation' => 'required',
+                                'validation' => '',
                             ],
             
                             'postcode' => [
                                 'label' => 'Postcode',
                                 'type' => 'text',
                                 'value' => '',
-                                'component' => 'niku-cms-text-customfield',
+                                'component' => 'niku-cms-readonly-customfield',
                                 'css_class_row_wrapper' => 'col-md-4 col-sm-4',
                                 'css_class_label' => 'col-md-12',
                                 'css_class_input_wrapper' => 'col-md-12',
-                                'validation' => 'required',
+                                'validation' => '',
                             ],
             
                             'plaats' => [
                                 'label' => 'Plaats',
                                 'type' => 'text',
                                 'value' => '',
-                                'component' => 'niku-cms-text-customfield',
+                                'component' => 'niku-cms-readonly-customfield',
                                 'css_class_row_wrapper' => 'col-md-4 col-sm-4',
                                 'css_class_label' => 'col-md-12',
                                 'css_class_input_wrapper' => 'col-md-12',
-                                'validation' => 'required',
+                                'validation' => '',
                             ],
             
                             'land' => [
                                 'label' => 'Land',
-                                'component' => 'niku-cms-select-customfield',
+                                'component' => 'niku-cms-readonly-customfield',
                                 'css_class_row_wrapper' => 'col-md-4 col-sm-4',
                                 'css_class_label' => 'col-md-12',
                                 'css_class_input_wrapper' => 'col-md-12',
@@ -192,7 +200,7 @@ class Checkout extends CheckoutManager
                                 'label' => 'BTW nummer',
                                 'type' => 'text',
                                 'value' => '',
-                                'component' => 'niku-cms-text-customfield',
+                                'component' => 'niku-cms-readonly-customfield',
                                 'css_class_row_wrapper' => 'col-md-12 col-sm-12',
                                 'css_class_label' => 'col-md-12',
                                 'css_class_input_wrapper' => 'col-md-12',
@@ -208,16 +216,16 @@ class Checkout extends CheckoutManager
                                 'value' => '',
                             ],
             
-                            'payment_method' => [
-                                'label' => 'Betaalmethode',
-                                'component' => 'niku-cart-payment-methods-customfield',
-                                'css_class_row_wrapper' => 'col-md-12 col-sm-12',
-                                'css_class_label' => 'col-md-12',
-                                'css_class_input_wrapper' => 'col-md-12',
-                                'mutator' => 'App\Application\Custom\Cart\Mutators\PaymentMethodsMutator',                                  
-                                'value' => '',
-                                'validation' => 'required',
-                            ],
+                            // 'payment_method' => [
+                            //     'label' => 'Betaalmethode',
+                            //     'component' => 'niku-cart-payment-methods-customfield',
+                            //     'css_class_row_wrapper' => 'col-md-12 col-sm-12',
+                            //     'css_class_label' => 'col-md-12',
+                            //     'css_class_input_wrapper' => 'col-md-12',
+                            //     'mutator' => 'App\Application\Custom\Cart\Mutators\PaymentMethodsMutator',                                  
+                            //     'value' => '',
+                            //     'validation' => 'required',
+                            // ],
         
                             'shoppingcart' => [                                                
                                 'validation' => '',
@@ -227,7 +235,7 @@ class Checkout extends CheckoutManager
                                 'main_table_wrapper' => 'margintopmedium',                               
                                 'cart_items_update_api_url' => '',                        
                                 'cart_items_delete_api_url' => '',                        
-                                'mutator' => 'App\Application\Custom\Cart\Mutators\ShoppingcartMutator',  
+                                'mutator' => 'App\Application\Custom\Cart\Mutators\Checkout\ShoppingcartMutator',  
                                 'to_checkout_button' => false,
                                 'value' => '',
                             ],
@@ -237,7 +245,7 @@ class Checkout extends CheckoutManager
                                 'component' => 'niku-cart-checkout-submit-customfield',                                                                        
                                 'validation' => '',
                                 'api_url' => '',
-                                'mutator' => 'App\Application\Custom\Cart\Mutators\CheckoutUrlApiMutator',  
+                                'mutator' => 'App\Application\Custom\Cart\Mutators\Checkout\CheckoutUrlApiMutator',  
                                 'saveable' => false,
                                 'value' => '',
                             ],
