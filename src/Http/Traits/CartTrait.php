@@ -214,28 +214,33 @@ trait CartTrait
         $items = [];
         $cartPriceSubtotal = 0;
         $cartTaxTotal = 0;
-        $cartPriceTotal = 0;        
+        $cartPriceTotal = 0;
 
         // Foreaching all the cart items
         foreach($cartItems as $key => $value){
 
             // Receiving the product configurations of the post type manager
-            $productModelConfig = $this->GetProductTemplate($value->template);              
-            
+            $productModelConfig = $this->GetProductTemplate($value->template);
+
             // Fetching the tax group of the product
             $taxGroup = $this->getTaxGroup($value);
 
             // Are prices filled in with tax or without tax?
             $pricesInclusiveTax = config('niku-cart.config.prices_inclusive_tax');
-            
+
             // Fetch the product prices
             $productPrices = $this->fetchPricesOfProduct($value, $pricesInclusiveTax, $taxGroup);
-            
+
             // Fetching the quantity
-            $quantity = (integer) number_format($value->getMeta('quantity'), 0, '.', '');                        
+            $quantity = (integer) number_format($value->getMeta('quantity'), 0, '.', '');
+
+            // Mutating the postmeta
+            $postmeta = $value->postmeta->keyBy('meta_key')->map(function($item, $key){
+                return $item->meta_value;
+            })->toArray();
 
             // Returning a new array to the items array
-            $items[$key] = [                
+            $items[$key] = [
 
                 // Default information
                 'id' => $value->id,
@@ -244,19 +249,22 @@ trait CartTrait
 
                 // Pricing and quantity details
                 'price_single' => $productPrices->priceSingle,
-                'quantity' => $quantity,       
+                'quantity' => $quantity,
                 'price_tax' => $productPrices->priceTax,
                 'price_total' => $productPrices->priceTotal,
 
+                // Meta details
+                'postmeta' => $postmeta,
+
                 // Config
-                'display_quantity' => $productModelConfig->disableQuantity,                
+                'display_quantity' => $productModelConfig->disableQuantity,
             ];
 
             // Adding the price to the total of the cart
-            $cartPriceSubtotal += $productPrices->priceSingle; 
-            $cartTaxTotal += $productPrices->priceTax; 
-            $cartPriceTotal += $productPrices->priceTotal; 
-        }        
+            $cartPriceSubtotal += $productPrices->priceSingle;
+            $cartTaxTotal += $productPrices->priceTax;
+            $cartPriceTotal += $productPrices->priceTotal;
+        }
 
         $return = collect([
 
@@ -265,27 +273,27 @@ trait CartTrait
 
             // Combined prices
             'cart_price_subtotal' => $cartPriceSubtotal,
-            'cart_price_tax' => $cartTaxTotal,                             
+            'cart_price_tax' => $cartTaxTotal,
             'cart_price_total' => $cartPriceTotal,
         ]);
 
         return $return;
-    }    
+    }
 
     protected function fetchPricesOfProduct($value, $pricesInclusiveTax, $taxGroup)
-    {        
-        $productPriceSingle = filter_var(number_format($value->getMeta('price_single'), 2, '.', ''), FILTER_VALIDATE_FLOAT);                
+    {
+        $productPriceSingle = filter_var(number_format($value->getMeta('price_single'), 2, '.', ''), FILTER_VALIDATE_FLOAT);
         $productPriceTotal = filter_var(number_format($value->getMeta('price_total'), 2, '.', ''), FILTER_VALIDATE_FLOAT);
-                
+
         // Lets remove the tax from the product so we know what the tax amount is
         if($pricesInclusiveTax === true){
-            $totalWithoutTax = $productPriceTotal / $taxGroup['percentage'];                        
-            $productTaxAmount = $productPriceTotal - $totalWithoutTax;            
-            
+            $totalWithoutTax = $productPriceTotal / $taxGroup['percentage'];
+            $productTaxAmount = $productPriceTotal - $totalWithoutTax;
+
         // Need to add the tax percentage to the total price of the product in the cart
-        } else {            
-            $totalWithTax = $productPriceTotal * $taxGroup['percentage'];            
-            $productTaxAmount = $totalWithTax - $productPriceTotal;            
+        } else {
+            $totalWithTax = $productPriceTotal * $taxGroup['percentage'];
+            $productTaxAmount = $totalWithTax - $productPriceTotal;
 
         }
 
@@ -293,27 +301,27 @@ trait CartTrait
             'priceSingle' => $productPriceSingle,
             'priceTax' => $productTaxAmount,
             'priceTotal' => $productPriceTotal,
-        ];        
+        ];
 
         return $prices;
     }
 
     protected function getTaxGroup($value)
     {
-        // Fetching the tax group                                    
+        // Fetching the tax group
         $productTaxGroup = $value->getMeta('tax_group');
         if(empty($productTaxGroup)){
             $productTaxGroup = config('niku-cart.config.default_tax_group');
         }
-                    
-        $taxGroups = collect(config('niku-cart.config.tax_groups'));    
-        $taxGroup = data_get($taxGroups, $productTaxGroup);            
+
+        $taxGroups = collect(config('niku-cart.config.tax_groups'));
+        $taxGroup = data_get($taxGroups, $productTaxGroup);
 
         // If the tax group is empty, use a empty one
         if(empty($taxGroup)){
-            $taxGroup = [                    
+            $taxGroup = [
                 'percentage' => 0,
-                'title' => '0% BTW',                    
+                'title' => '0% BTW',
                 'identifier' => 'none',
             ];
         }
@@ -335,12 +343,12 @@ trait CartTrait
     }
 
     protected function configurationsRequired($cart, $request)
-    {                        
-        $checkConfigurations = (new Checkout)->override_show_post($cart->post_name, $request, 'shoppingcart');        
+    {
+        $checkConfigurations = (new Checkout)->override_show_post($cart->post_name, $request, 'shoppingcart');
         if($checkConfigurations->getStatusCode() == 431) {
             return true;
         } else {
             return false;
-        }       
+        }
     }
 }
