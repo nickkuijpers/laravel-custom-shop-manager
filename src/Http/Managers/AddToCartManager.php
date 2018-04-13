@@ -97,7 +97,8 @@ class AddToCartManager extends NikuPosts
         if(!$cartModel){
             return [
                 'continue' => false,
-                'message' => 'The cart does not exist. Try clearing your localstorage.'
+                'message' => 'The cart does not exist. Try clearing your localstorage.',
+                'clear_cache' => true,
             ];
         }
 
@@ -209,12 +210,23 @@ class AddToCartManager extends NikuPosts
     {
         $onCheck = $this->validateCreate($request);
         if($onCheck['continue'] === false){
+
+            $errorCode = 422;
+            if(array_key_exists('clear_cache', $onCheck) && $onCheck['clear_cache'] === true){
+                $errorCode = 432;
+            }
+
             if(array_key_exists('message', $onCheck)){
                 $message = $onCheck['message'];
             } else {
                 $message = 'You are not authorized to do this.';
             }
-            return $this->abort($message);
+
+            return response()->json([
+                'errors' => [
+                    'error' => [$message],
+                ],
+            ], $errorCode);
         }
 
         // Receive the cart instance

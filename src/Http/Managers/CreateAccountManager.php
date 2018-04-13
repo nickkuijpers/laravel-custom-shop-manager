@@ -8,6 +8,7 @@ use Niku\Cms\Http\NikuPosts;
 use Niku\Cart\Http\Traits\CartTrait;
 use App\Application\Custom\Models\User;
 use Niku\Cms\Http\Controllers\cmsController;
+use App\Application\Custom\Cart\PostTypes\Checkout;
 use Niku\Cms\Http\Controllers\Cms\CheckPostController;
 
 class CreateAccountManager extends NikuPosts
@@ -194,9 +195,15 @@ class CreateAccountManager extends NikuPosts
         // Setting the user role
         $customer->assignRole('default');
 
-        $configurationsRequest = $this->configurationsRequired($cart, $request);
-        if($configurationsRequest === true){
-            $linkTo = 'configure';
+        // Validate if configurations are required
+        $checkConfigurations = (new Checkout)->override_show_post($cart->post_name, $request, 'shoppingcart');
+        $checkConfigurations = json_decode(json_encode($checkConfigurations->getData()), true);
+        if(array_key_exists('redirect_to', $checkConfigurations)){
+            if($checkConfigurations['redirect_to']['name'] == 'configure'){
+                $linkTo = 'configure';
+            } else {
+                $linkTo = 'checkout';
+            }
         } else {
             $linkTo = 'checkout';
         }

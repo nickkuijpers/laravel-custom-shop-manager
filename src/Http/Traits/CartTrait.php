@@ -33,8 +33,13 @@ trait CartTrait
 
     protected function fetchOrder($orderIdentifier)
     {
+        // $cart = NikuPosts::where([
+        //     ['post_type', '=', 'shoppingcart'],
+        //     ['post_name', '=', $orderIdentifier],
+        // ])->with('postmeta')->first();
+
         $cart = NikuPosts::where([
-            ['post_type', '=', 'shoppingcart'],
+            ['post_type', '=', 'order'],
             ['post_name', '=', $orderIdentifier],
         ])->with('postmeta')->first();
 
@@ -43,8 +48,13 @@ trait CartTrait
 
     protected function fetchOrderById($orderIdentifier)
     {
+        // $order = NikuPosts::where([
+        //     ['post_type', '=', 'shoppingcart'],
+        //     ['id', '=', $orderIdentifier],
+        // ])->with('postmeta')->first();
+
         $order = NikuPosts::where([
-            ['post_type', '=', 'shoppingcart'],
+            ['post_type', '=', 'order'],
             ['id', '=', $orderIdentifier],
         ])->with('postmeta')->first();
 
@@ -228,8 +238,12 @@ trait CartTrait
 
     protected function fetchAllOrderProducts($order)
     {
+        // $orderItems = $order->posts()->where([
+        //     ['post_type', '=', 'shoppingcart-products']
+        // ])->with('postmeta')->get();
+
         $orderItems = $order->posts()->where([
-            ['post_type', '=', 'shoppingcart-products']
+            ['post_type', '=', 'order-products']
         ])->with('postmeta')->get();
 
         return $orderItems;
@@ -375,8 +389,10 @@ trait CartTrait
     {
         $checkConfigurations = (new Checkout)->override_show_post($cart->post_name, $request, 'shoppingcart');
         if($checkConfigurations->getStatusCode() == 431) {
+            echo true;
             return true;
         } else {
+            echo false;
             return false;
         }
     }

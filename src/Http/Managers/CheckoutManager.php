@@ -23,7 +23,6 @@ class CheckoutManager extends NikuPosts
 	public $label = 'Checkout';
 
 	// Define the custom post type
-	// public $identifier = 'order';
 	public $identifier = 'shoppingcart';
 
 	// Users can only view their own posts when this is set to true
@@ -281,7 +280,7 @@ class CheckoutManager extends NikuPosts
                 'code' => 'error',
                 'errors' => [
                     'payment_api' => ['Er is geen transactie aangemaakt. Neemt u contact met ons op.'],
-                    'hint' => $transaction->error,
+                    'hint' => [$transaction->error],
                 ],
             ], 422);
 
@@ -295,15 +294,15 @@ class CheckoutManager extends NikuPosts
 
     protected function changeCartToOrder($cart, $cartItems, $request)
     {
+        // Fetching all the prices and details
+        $mutatedCart = $this->fetchMutatedCart($cart, 'order');
+
         // Changing the cart to a order
-        // $cart->post_type = 'orders';
-        // $cart->status = 'in_progress';
+        $cart->post_type = 'order';
+        $cart->status = 'in_progress';
 
         // Saving the changes made to the order
         $cart->save();
-
-        // Fetching all the prices and details
-        $mutatedCart = $this->fetchMutatedCart($cart);
 
         // Setting the values to save as order meta
         $toSave = [];
@@ -319,12 +318,15 @@ class CheckoutManager extends NikuPosts
 
         // Changing the cart items to a order product
         foreach($cartItems as $key => $value){
-            // $value->post_type = 'order-products';
+            $value->post_type = 'order-products';
             $value->save();
         }
 
-        // We will be returning this value as the new order
-        $order = $cart;
+        // Lets refetch the order
+        $order = NikuPosts::where([
+            ['id', '=', $cart->id],
+            ['post_type', '=', 'order']
+        ])->with('postmeta')->first();
 
         return $order;
     }
