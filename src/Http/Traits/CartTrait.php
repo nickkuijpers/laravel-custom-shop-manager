@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Niku\Cms\Http\NikuPosts;
 use Illuminate\Support\Facades\Log;
 use Niku\Cms\Http\Controllers\cmsController;
-use App\Application\Custom\Cart\Checkout\Checkout;
+use App\Application\Custom\Cart\PostTypes\Checkout;
 
 trait CartTrait
 {
@@ -335,7 +335,7 @@ trait CartTrait
     }
 
     protected function configurationsRequired($cart, $request)
-    {                
+    {                        
         $checkConfigurations = (new Checkout)->override_show_post($cart->post_name, $request, 'shoppingcart');        
         if($checkConfigurations->getStatusCode() == 431) {
             return true;

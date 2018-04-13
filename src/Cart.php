@@ -21,9 +21,9 @@ class Cart
 				// Route::post('/show', '\Niku\Cart\Http\Controllers\Cart\CartShowController@handle');
 
 				// Route::post('/items/add', '\Niku\Cart\Http\Controllers\Cart\CartItemsAddController@handle');
-				Route::post('/items/update', '\Niku\Cart\Http\Controllers\Cart\CartItemsUpdateController@handle');
-				Route::post('/items/config', '\Niku\Cart\Http\Controllers\Cart\CartItemsConfigController@handle');
-				Route::post('/items/config-status', '\Niku\Cart\Http\Controllers\Cart\CartItemsConfigStatusController@handle');
+				// Route::post('/items/update', '\Niku\Cart\Http\Controllers\Cart\CartItemsUpdateController@handle');
+				// Route::post('/items/config', '\Niku\Cart\Http\Controllers\Cart\CartItemsConfigController@handle');
+				// Route::post('/items/config-status', '\Niku\Cart\Http\Controllers\Cart\CartItemsConfigStatusController@handle');
 				// Route::post('/items/delete', '\Niku\Cart\Http\Controllers\Cart\CartItemsDeleteController@handle');
 			});
 

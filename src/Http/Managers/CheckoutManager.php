@@ -123,7 +123,7 @@ class CheckoutManager extends NikuPosts
     }
 
 	public function override_show_post($id, $request, $postType)
-    {		
+    {				
 		$cart = $this->fetchCart($id);
         if(empty($cart)){
             return $this->abort('The shoppingcart could not be found.', 422);
