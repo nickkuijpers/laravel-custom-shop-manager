@@ -356,6 +356,9 @@ class CheckoutManager extends NikuPosts
         // Fetching the and setting the price
         $priceTotal = filter_var(number_format($order->getMeta('price_total'), 2, '.', ''), FILTER_VALIDATE_FLOAT);
 
+        // Fetching the payment method
+        $paymentMethod = $order->getMeta('payment_method');
+
         // Lets create a Mollie transaction
         try {
 
@@ -364,6 +367,7 @@ class CheckoutManager extends NikuPosts
                 "description" => $description,
                 "redirectUrl" => $redirectUrl,
                 "webhookUrl" => $webhookUrl,
+                "method" => $paymentMethod,
             ]);
 
             // Lets mutate the order so its easier to look at in the database
@@ -391,6 +395,10 @@ class CheckoutManager extends NikuPosts
             $toSave['redirectUrl'] = $redirectUrl;
             $toSave['webhookUrl'] = $webhookUrl;
             $toSave['mollie_id'] = $paymentMollie->id;
+            $toSave['mollie_response'] = json_encode($paymentMollie);
+            $toSave['webhook_url'] = $paymentMollie->links->webhookUrl;
+            $toSave['redirection_url'] = $paymentMollie->links->redirectUrl;
+            $toSave['payment_url'] = $paymentMollie->links->paymentUrl;
             $mollie->saveMetas($toSave);
 
             // Lets trigger a function which we can hook into to save some information
@@ -402,7 +410,8 @@ class CheckoutManager extends NikuPosts
                 'redirection_url' => $paymentMollie->links->paymentUrl,
             ];
         }
-        //catch exception
+
+        // Catch the exception
         catch( \Mollie_API_Exception $e) {
 
             return (object) [
@@ -414,6 +423,60 @@ class CheckoutManager extends NikuPosts
 
     }
 
+    public function show_custom_get_mollie_webhook($request, $id, $customId, $post)
+    {
+        // Validating the input
+        Validator::make([
+            'id' => $id,
+            'transaction_id' => $request->id
+        ], [
+            'id' => 'required',
+            'transaction_id' => 'required',
+        ])->validate();
+
+        // Setting the order
+        $order = $post;
+        $transactionId = $request->id;
+
+        // Fetching the transaction
+        $transaction = NikuPosts::where([
+            ['post_parent', '=', $order->id],
+            ['post_name', '=', $order->post_name],
+            ['post_password', '=', $transactionId],
+        ])->with('postmeta')->first();
+
+        // Return a error when the transaction is not found
+        if(empty($transaction)){
+            return response()->json([
+                'errors' => [
+                    'transaction' => 'De transactie is niet gevonden',
+                ]
+            ], 422);
+        }
+
+        // Fetching the payment status
+        $paymentMollie = Mollie::api()->payments()->get($transactionId);
+
+        // Validating if the payment is expired
+        if($paymentMollie->status == 'expired'){
+            $transactionExpired = true;
+        } else {
+            $transactionExpired = false;
+        }
+
+        // Saving the transaction with the new status
+        $transaction->status = $paymentMollie->status;
+        $transaction->template = $transactionExpired;
+        $transaction->save();
+
+        $this->trigger_mollie_transaction_webhook($order, $paymentMollie, $transaction);
+
+        return response()->json([
+        	'message' => 'Payment status updated.'
+        ], 200);
+
+    }
+
     // Empty function to override in the checkout class
     public function trigger_mollie_transaction_created($order, $mollie, $user)
     {
@@ -421,53 +484,15 @@ class CheckoutManager extends NikuPosts
     }
 
     // Empty function to override in the checkout class
-    public function trigger_mollie_transaction_failed()
+    public function trigger_mollie_transaction_failed($error)
     {
 
     }
 
-    public function show_custom_get_mollie_webhook($request, $id, $customId, $post)
+    // Empty function to override in the checkout class
+    public function trigger_mollie_transaction_webhook($order, $paymentMollie, $transaction)
     {
-        // Validating the input
-        Validator::make([
-            'id' => $id,
-            'mollie_id' => $request->id
-        ], [
-            'id' => 'required',
-            'mollie_id' => 'required',
-        ])->validate();
 
-        dd($post);
-
-        $product = $this->fetchProduct($request->post_name);
-
-        // If the product does not exist, we log it into the database so we can add it later
-        if(!$product){
-            $unknownProduct = $this->fetchUnknownProduct($request->post_name);
-            if(!$unknownProduct){
-                $unknownProduct = new NikuPosts;
-                $unknownProduct->post_type = 'unknown-products';
-                $unknownProduct->post_title = $request->post_name;
-                $unknownProduct->post_name = $request->post_name;
-                $unknownProduct->save();
-            }
-
-            return $this->abort('Product "' . $request->product_id . '" does not exist or is inactive.');
-        }
-
-        // Lets get the add to cart product type configuration file
-        $cartConfig = $this->fetchProductTemplate($product->template);
-        if(!$cartConfig){
-            return $this->abort('The template of the product is not available.');
-        }
-
-        // Lets create the return array
-        $return = [
-            'post_type' => $product->template,
-        ];
-
-        return response()->json($return);
     }
-
 
 }
