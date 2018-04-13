@@ -31,6 +31,26 @@ trait CartTrait
         return $cart;
     }
 
+    protected function fetchOrder($orderIdentifier)
+    {
+        $cart = NikuPosts::where([
+            ['post_type', '=', 'shoppingcart'],
+            ['post_name', '=', $orderIdentifier],
+        ])->with('postmeta')->first();
+
+        return $cart;
+    }
+
+    protected function fetchOrderById($orderIdentifier)
+    {
+        $order = NikuPosts::where([
+            ['post_type', '=', 'shoppingcart'],
+            ['id', '=', $orderIdentifier],
+        ])->with('postmeta')->first();
+
+        return $order;
+    }
+
     protected function fetchSingleCartProduct($cart, $cartProductIdentifier)
     {
         $cartProduct = $cart->where([
@@ -206,6 +226,15 @@ trait CartTrait
         return $cartItems;
     }
 
+    protected function fetchAllOrderProducts($order)
+    {
+        $orderItems = $order->posts()->where([
+            ['post_type', '=', 'shoppingcart-products']
+        ])->with('postmeta')->get();
+
+        return $orderItems;
+    }
+
     public function fetchMutatedCart($cart)
     {
         $cartItems = $this->fetchAllCartProducts($cart);
@@ -350,5 +379,36 @@ trait CartTrait
         } else {
             return false;
         }
+    }
+
+    public function mutateOrder($order)
+    {
+        // Fetching the post meta of the order and mapping the values
+        $orderMeta = $order->postmeta->keyBy('meta_key')->map(function($item, $key){
+            return $item->meta_value;
+        })->toArray();
+
+        // Fetching all the products of the order and mapping the values
+        $items = $this->fetchAllOrderProducts($order)->keyBy('id')->map(function($item, $key){
+
+            $item->product_meta = $item->postmeta->keyBy('meta_key')->map(function($item, $key){
+                return $item->meta_value;
+            })->toArray();
+
+            unset($item->postmeta);
+            unset($item->pivot);
+
+            return $item;
+        })->toArray();
+
+        $orderArray = $order->toArray();
+        unset($orderArray['postmeta']);
+
+        // Returning the values
+        $mutatedOrder = [];
+        $mutatedOrder['order'] = $orderArray;
+        $mutatedOrder['order']['order_meta'] = $orderMeta;
+        $mutatedOrder['order']['items'] = $items;
+        return $mutatedOrder;
     }
 }

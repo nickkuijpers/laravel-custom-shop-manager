@@ -13,13 +13,13 @@ use Niku\Cms\Http\Controllers\Cms\CheckPostController;
 class CreateAccountManager extends NikuPosts
 {
 	use CartTrait;
-	
+
 	public $label = 'Create account';
 	public $identifier = 'user';
-	public $disableDefaultPostName = true;		
+	public $disableDefaultPostName = true;
 	public $getPostByPostName = true;
 
-	public $enableAllSpecificFieldsUpdate = false;    
+	public $enableAllSpecificFieldsUpdate = false;
 
 	public $view;
 	public $helpers;
@@ -33,58 +33,74 @@ class CreateAccountManager extends NikuPosts
 		$this->helpers = new cmsController;
 		$this->view = $this->view();
     }
-    
+
     public function override_show_post($id, $request)
     {
         $collection = ['templates' => $this->view];
         $collection['config'] = $this->config;
-    
+
         $user = $request->user('api');
         if($user){
-            $post = User::where([
-                [ 'id' , '=', $user->id]
-            ])->with('meta')->first();        
-            $collection['post'] = $post;
-            $toMerge = [
-                'first_name' => [ 
-                    'value' => $post->first_name 
-                ],
-                'last_name' => [ 
-                    'value' => $post->last_name 
-                ],
-                'email' => [ 
-                    'value' => $post->email 
-                ],
-                'address' =>[
-                  'value' => $post->getMeta('address')
-                ]
-            ];
+
+            $user = $this->getUser($user->id);
+            $toMerge = $this->getUserValues($user);
+
+            $collection['post'] = $user;
 
             $collection = $this->helpers->addValuesToCollection($collection, $toMerge);
             $collection = $this->helpers->showMutator($this, $collection, $request);
 
             // We need to unset the password if we are logged in already
-            unset($collection['templates']['default']['customFields']['form_wrapper']['customFields']['password']);            
+            unset($collection['templates']['default']['customFields']['form_wrapper']['customFields']['password']);
 
         } else {
             $toMerge = [];
 
             $collection = $this->helpers->addValuesToCollection($collection, $toMerge);
             $collection = $this->helpers->showMutator($this, $collection, $request);
-        }        
-        
+        }
+
         return $collection;
     }
 
-    public function override_edit_post($id, $request) 
-    {        
-        $cart = $this->fetchCart($request->cart_identifier);        
-        
+    public function getUser($id)
+    {
+        $user = User::where([
+            [ 'id' , '=', $id]
+        ])->with('meta')->first();
+
+        return $user;
+    }
+
+    public function getUserValues($user)
+    {
+        $toMerge = [
+            'first_name' => [
+                'value' => $user->first_name
+            ],
+            'last_name' => [
+                'value' => $user->last_name
+            ],
+            'email' => [
+                'value' => $user->email
+            ],
+            'address' =>[
+              'value' => $user->getMeta('address')
+            ]
+        ];
+
+        return $toMerge;
+    }
+
+    public function override_edit_post($id, $request)
+    {
+        $cart = $this->fetchCart($request->cart_identifier);
+
         $user = $request->user('api');
         $user = User::where([
             ['id', '=', $user->id],
         ])->first();
-        
+
         if(!$user){
             return response()->json([
                 'errors' => [
@@ -98,8 +114,8 @@ class CreateAccountManager extends NikuPosts
         $validationRules = $this->helpers->validatePostFields($request->all(), $request, $this);
 
         // Make sure a user can edit his own e-mail
-        $validationRules['email'] = 'required|email|unique:users,email,' . $user->id;                          
-        
+        $validationRules['email'] = 'required|email|unique:users,email,' . $user->id;
+
         // Unset the password
         unset($validationRules['password']);
 
@@ -113,17 +129,17 @@ class CreateAccountManager extends NikuPosts
         $user->first_name = $request->first_name;
         $user->last_name = $request->last_name;
         $user->email = $request->email;
-        $user->save();        
-        
+        $user->save();
+
         $toSave = [];
         foreach($requestOnly as $key => $value){
             if(empty($value)){
                 $toSave[$key] = $value;
-            }            
+            }
         }
-        $user->saveMetas($toSave);        
-    
-        $configurationsRequest = $this->configurationsRequired($cart, $request);        
+        $user->saveMetas($toSave);
+
+        $configurationsRequest = $this->configurationsRequired($cart, $request);
         if($configurationsRequest === true){
             $linkTo = 'configure';
         } else {
@@ -139,46 +155,46 @@ class CreateAccountManager extends NikuPosts
 	}
 
     public function override_create_post($request)
-    {                		
-        $cart = $this->fetchCart($request->cart_identifier);        
+    {
+        $cart = $this->fetchCart($request->cart_identifier);
 
          // Validating the request
         $validationRules = $this->helpers->validatePostFields($request->all(), $request, $this);
-        Validator::make($request->all(), $validationRules)->validate();        
+        Validator::make($request->all(), $validationRules)->validate();
 
         $sanitizedKeys = collect($this->helpers->getValidationsKeys($this))->keys()->toArray();
         $requestOnly = $request->only($sanitizedKeys);
 
         $customer = new User;
-        $customer->email = data_get($requestOnly, 'email');        
+        $customer->email = data_get($requestOnly, 'email');
         $customer->first_name = data_get($requestOnly, 'voornaam');
         $customer->last_name = data_get($requestOnly, 'achternaam');
 
         // Validating if the password does exist and if it is required
-        if(array_key_exists('password', $requestOnly)){            
-            $password = $requestOnly['password'];    
+        if(array_key_exists('password', $requestOnly)){
+            $password = $requestOnly['password'];
         } else {
-            $password = str_random(30);                    
+            $password = str_random(30);
         }
-        
+
         $customer->password = bcrypt($password);
         $customer->save();
-    
+
         // Saving all the other metas
         $toSave = [];
         foreach($requestOnly as $key => $value){
             if(empty($value)){
                 $toSave[$key] = $value;
-            }            
+            }
         }
 
         // Saving all the metas
-        $customer->saveMetas($toSave);        
+        $customer->saveMetas($toSave);
 
         // Setting the user role
         $customer->assignRole('default');
-		
-        $configurationsRequest = $this->configurationsRequired($cart, $request);        
+
+        $configurationsRequest = $this->configurationsRequired($cart, $request);
         if($configurationsRequest === true){
             $linkTo = 'configure';
         } else {
@@ -191,5 +207,43 @@ class CreateAccountManager extends NikuPosts
                 'name' => $linkTo,
             ],
         ]);
+    }
+
+    public function override_check_post($id, $request)
+    {
+        $cart = $this->fetchCart($request->cart_identifier);
+
+        $user = $request->user('api');
+        $user = User::where([
+            ['id', '=', $user->id],
+        ])->first();
+
+        if(!$user){
+            return response()->json([
+                'errors' => [
+                    'user' => ['Je bent niet ingelogd.'],
+                ],
+                'message' => 'You are not authenticated',
+            ], 422);
+        }
+
+        $userValues = collect($this->getUserValues($user))->map(function($item, $key){
+            return $item['value'];
+        })->toArray();
+
+        // Validating the request
+        $validationRules = $this->helpers->validatePostFields($userValues, $request, $this);
+
+        // Overiding some validations
+        unset($validationRules['password']);
+        $validationRules['email'] = 'required';
+
+        // Execute the validations
+        Validator::make($userValues, $validationRules)->validate();
+
+        // Return a success message if all went good
+        return response()->json([
+            'status' => 'success',
+        ], 200);
     }
 }

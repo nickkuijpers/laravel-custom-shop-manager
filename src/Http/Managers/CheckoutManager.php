@@ -8,6 +8,12 @@ use Niku\Cms\Http\NikuPosts;
 use Niku\Cart\Http\Traits\CartTrait;
 use Niku\Cms\Http\Controllers\cmsController;
 use Niku\Cms\Http\Controllers\Cms\CheckPostController;
+use App\Application\Custom\Cart\PostTypes\CreateAccount;
+use Mollie\Laravel\Facades\Mollie;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use App\Application\Custom\Models\User;
+use Niku\Cart\Http\Managers\CheckoutManager;
 
 class CheckoutManager extends NikuPosts
 {
@@ -17,6 +23,7 @@ class CheckoutManager extends NikuPosts
 	public $label = 'Checkout';
 
 	// Define the custom post type
+	// public $identifier = 'order';
 	public $identifier = 'shoppingcart';
 
 	// Users can only view their own posts when this is set to true
@@ -31,8 +38,8 @@ class CheckoutManager extends NikuPosts
 
 	public $getPostByPostName = true;
 
-	public $enableAllSpecificFieldsUpdate = true;    
-	public $excludeSpecificFieldsFromUpdate = [];	
+	public $enableAllSpecificFieldsUpdate = true;
+	public $excludeSpecificFieldsFromUpdate = [];
 
 	public $config = [
 		'back_to_previous_page' => false,
@@ -123,7 +130,7 @@ class CheckoutManager extends NikuPosts
     }
 
 	public function override_show_post($id, $request, $postType)
-    {				
+    {
 		$cart = $this->fetchCart($id);
         if(empty($cart)){
             return $this->abort('The shoppingcart could not be found.', 422);
@@ -134,7 +141,6 @@ class CheckoutManager extends NikuPosts
 		if($authenticationRequired === true){
 			$user = $request->user('api');
 			if(!$user){
-
 				return response()->json([
 					'code' => 'error',
 					'redirect_to' => [
@@ -145,8 +151,8 @@ class CheckoutManager extends NikuPosts
 					],
 				], 431);
 			}
-		}		
-		
+		}
+
 		// Lets check if there are any products which have not been passed the configurations yet
 		$onCheck = $this->validateShow($id, $request, $cart);
         if($onCheck['continue'] === false){
@@ -205,212 +211,263 @@ class CheckoutManager extends NikuPosts
     }
 
 	/**
-	 * Doing validations before being able to checkout
-	 */
-	// public function on_check_check($postTypeModel, $postId, $request)
-	// {
-	// 	$cart = $this->fetchCartbyId($postId);
-	// 	if(empty($cart)){
-	// 		return [
-	// 			'continue' => false,
-	// 			'message' => [
-	// 				'errors' => [
-	// 					0 => 'There is no cart available',
-	// 				]
-	// 			],
-	// 		];
-	// 	}
+     * Handling the editting of the order
+     */
+    public function override_edit_response($postId, $request, $response)
+    {
+        // Validate if we need authentication
+        $authenticationRequired = config('niku-cart.authentication.required');
+		if($authenticationRequired === true){
+			$user = $request->user('api');
+			if(!$user){
+				return response()->json([
+					'code' => 'error',
+					'redirect_to' => [
+						'name' => 'checkout-login',
+					],
+					'errors' => 'You must be authenticated',
+				], 431);
+			}
+        }
 
-	// 	$cartItemsCount = $cart->posts()->where([
-    //         ['post_type', '=', 'shoppingcart-products']
-	// 	])->with('postmeta')->count();
+        // Need to change the shopping cart to a order
+        $cart = $this->fetchCartById($postId);
 
-	// 	if($cartItemsCount === 0){
-	// 		return [
-	// 			'continue' => false,
-	// 			'message' => [
-	// 				'errors' => [
-	// 					0 => 'There are no products in the cart'
-	// 				]
-	// 			],
-	// 		];
-	// 	}
+        // Fetching all the products in the cart
+        $cartItems = $this->fetchAllCartProducts($cart);
 
-	// 	// Need to check if all the products have succeeded the validations
-	// 	$onCheck = $this->validateShow($cart->post_name, $request, $cart);
-    //     if($onCheck['continue'] === false){
-    //         if(array_key_exists('message', $onCheck)){
-    //             $message = $onCheck['message'];
-    //         } else {
-    //             $message = 'You are not authorized to do this.';
-    //         }
+        // // Lets validate if the user details are all filled in
+        $checkUsersDetails = (new CreateAccount)->override_check_post($cart->post_name, $request);
+        if($checkUsersDetails->getStatusCode() !== 200) {
+            return $checkUsersDetails;
+        }
 
-	// 		$toSave = [
-	// 			'errors' => json_encode($onCheck['errors'])
-	// 		];
-	// 		$cart->saveMetas($toSave);
+        // Lets validate if all the configurations are fullfulled
+        $checkConfigurations = $this->override_show_post($cart->post_name, $request, 'shoppingcart');
+        if($checkConfigurations->getStatusCode() !== 200) {
+            return $checkConfigurations;
+        }
 
-	// 		return [
-	// 			'continue' => false,
-	// 			'message' => [
-	// 				'errors' => [
-	// 					0 => 'Not all the required configurations are filled in.'
-	// 				]
-	// 			],
-	// 		];
-	// 	}
+        // Lets validate if the payment method is set and if not, redirect to the payment page
+        if(empty($cart->getMeta('payment_method'))){
+            return response()->json([
+                'code' => 'error',
+                'redirect_to' => [
+                    'name' => 'payment-method',
+                ],
+                'errors' => [
+                    'payment_method' => ['De betaalmethode is verplicht om af te kunnen rekenen'],
+                ],
+            ], 431);
+        }
 
-	// 	// Lets check if the payment methods is filled in
-	// 	Validator::make($request, [
-	// 		'payment_method' => 'required',
-	// 	])->validate();
-	// }
+        // Changing the cart to a order
+        $order = $this->changeCartToOrder($cart, $cartItems, $request);
 
-	// public function override_edit_response($postId, $request, $response)
-	// {
-	// 	$cart = $this->fetchCart($postId);
-	// 	$items = $this->fetchAllCartProducts($cart);
+        // Lets fetch all the users details and set that to the order
+        $this->connectUserToOrder($order, $user);
 
-	// 	$title = '';
-	// 	if(!empty($checkoutFields) && !empty($checkoutFields->postTitle)){
-	// 		foreach($checkoutFields->postTitle as $postTitle){
-	// 			$title .= $request->get($postTitle) . ' ';
-	// 		}
-	// 		$title = trim($title);
-	// 		$cart->post_title = $title;
-	// 	}
+        // Need to create a Mollie transaction
+        $transaction = $this->createMollieTransaction($order, $user);
+        if($transaction->created === false){
 
-	// 	// Lets move it from the shoppingcart to the order post type
-	// 	$cart->post_type = 'orders';
-	// 	$cart->status = 'in_progress';
-	// 	$cart->save();
+            // Lets trigger a function which we can hook into to save some information
+            $this->trigger_mollie_transaction_failed($transaction->error);
 
-	// 	// Lets recalculate the total price of all the items in the shoppingcart
-	// 	$priceTotal = 0;
-	// 	foreach($items as $key => $value){
-	// 		$priceTotal += number_format($value->getMeta('price_total'), 2, '.', '');
-	// 	}
+            // Logging the error
+            Log::emergency($order->id . ' - ' . json_encode($transaction->error));
 
-	// 	// Lets whitelist the payment method
-	// 	switch($request->paymentMethod){
-	// 		default:
-	// 			$paymentMethod = 'ideal';
-	// 		break;
-	// 	}
+            return response()->json([
+                'code' => 'error',
+                'errors' => [
+                    'payment_api' => ['Er is geen transactie aangemaakt. Neemt u contact met ons op.'],
+                    'hint' => $transaction->error,
+                ],
+            ], 422);
 
-	// 	// Save the default requirements of the order and payment information
-	// 	$cart->saveMetas([
-	// 		'price_total' => $priceTotal,
-	// 		'payment_method' => $paymentMethod,
-	// 		'payment_status' => 'in_progress',
-	// 	]);
+        }
 
-	// 	// Lets create a customer
-	// 	$customer = new NikuPosts;
-	// 	$customer->post_type = 'customers';
-	// 	$customer->post_title = $title;
-	// 	$customer->post_name = $title;
-	// 	$customer->save();
+        // Redirect to thank you page
+        return response()->json([
+            'redirection_url' => $transaction->redirection_url
+        ], 200);
+    }
 
-	// 	foreach($request->only($checkoutKeys) as $checkoutKey => $checkoutValue){
+    protected function changeCartToOrder($cart, $cartItems, $request)
+    {
+        // Changing the cart to a order
+        // $cart->post_type = 'orders';
+        // $cart->status = 'in_progress';
 
-	// 		// Saving it to the database
-	// 		$object = [
-	// 			'meta_key' => $checkoutKey,
-	// 			'meta_value' => $checkoutValue,
-	// 			'group' => 'checkout',
-	// 		];
+        // Saving the changes made to the order
+        $cart->save();
 
-	// 		// Update or create the meta key of the post
-	// 		$customer->postmeta()->updateOrCreate([
-	// 			'meta_key' => $checkoutKey
-	// 		], $object);
+        // Fetching all the prices and details
+        $mutatedCart = $this->fetchMutatedCart($cart);
 
-	// 	}
+        // Setting the values to save as order meta
+        $toSave = [];
+        $toSave['ip_address'] = $request->ip();
+        $toSave['payment_status'] = 'in_progress';
+        $toSave['price_subtotal'] = $mutatedCart['cart_price_subtotal'];
+        $toSave['price_tax'] = $mutatedCart['cart_price_tax'];
+        $toSave['price_total'] = $mutatedCart['cart_price_total'];
+        $toSave['items'] = json_encode($mutatedCart['items']);
 
-	// 	// Lets attach the customer to the order
-	// 	$customer->taxonomies()->attach($cart);
+        // Saving the metas to the order
+        $cart->saveMetas($toSave);
 
-	// 	$this->triggerEvent('order_customer_created', $checkoutFields, [
-	// 		'cart' => $cart,
-	// 		'customer' => $customer,
-	// 	]);
+        // Changing the cart items to a order product
+        foreach($cartItems as $key => $value){
+            // $value->post_type = 'order-products';
+            $value->save();
+        }
 
-	// 	// Lets receive the redirect path by the users website config
-	// 	$website = $this->getWebsite($websiteId);
-	// 	$redirectUrlPath = $website->post_title . $website->getMeta('embed_redirect_path_thankyou');
+        // We will be returning this value as the new order
+        $order = $cart;
 
-	// 	// Lets set some required values
-	// 	$redirectUrl = $redirectUrlPath . "?identifier=" . $cart->post_name;
-	// 	$webhookUrl = config('app.payment_webhook_url') . "api/cart/" . $website->post_name . "/order/payment/callback?identifier=" . $cart->post_name;
-	// 	$description = 'Bestelling ' . $cart->id;
+        return $order;
+    }
 
-	// 	$this->triggerEvent('order_created', $checkoutFields, [
-	// 		'cart' => $cart,
-	// 		'customer' => $customer,
-	// 	]);
+    protected function connectUserToOrder($order, $user)
+    {
+        // Fetching all the users values and setting the values out of the array
+        $userValues = collect((new CreateAccount)->getUserValues($user))->map(function($item, $key){
+            return $item['value'];
+        });
 
-	// 	// Lets create a Mollie transaction
-	// 	try {
+        // Connecting the user to the order
+        $order->post_author = $user->id;
+        $order->save();
 
-	// 		$paymentMollie = Mollie::api()->payments()->create([
-	// 			"amount"      => $priceTotal,
-	// 			"description" => $description,
-	// 			"redirectUrl" => $redirectUrl,
-	// 			"webhookUrl" => $webhookUrl,
-	// 		]);
+        // Saving the users values to the order
+        $order->saveMetas($userValues);
+    }
 
-	// 		// Lets validate if there is a duplicate transaction id and if so, append it.
-	// 		$transactionCount = 1;
+    protected function createMollieTransaction($order, $user)
+    {
+        // Setting the urls
+        $redirectUrl = config('niku-cart.mollie.redirect_url') . '/thankyou?order=' . $order->post_name . '&url=/thankyou/' . $order->post_name;
+        $webhookUrl = config('niku-cart.mollie.webhook_url') . '/cpm/checkout/show/' . $order->post_name . '/mollie_webhook';
 
-	// 		 // Lets create a Mollie transaction
-	// 		$mollie = new NikuPosts;
-	// 		$mollie->post_type = 'transactions';
-	// 		$mollie->post_title = $description;
-	// 		$mollie->post_name = $cart->post_name . '_' . $paymentMollie->id;
-	// 		$mollie->save();
+        // Setting the description
+        $description = 'Bestelling ' . $order->id;
 
-	// 		// Lets save the mollie transactions meta
-	// 		$mollie->saveMetas([
-	// 			'price_total' => $priceTotal,
-	// 			'price_total_received_by_payment_provider' => $paymentMollie->amount,
-	// 			'ip_address' => $request->ip(),
-	// 			'payment_identifier' => $paymentMollie->id,
-	// 			'payment_status' => $paymentMollie->status,
-	// 			'payment_created' => $paymentMollie->createdDatetime,
-	// 			'payment_links' => json_encode($paymentMollie->links),
-	// 		]);
+        // Fetching the and setting the price
+        $priceTotal = filter_var(number_format($order->getMeta('price_total'), 2, '.', ''), FILTER_VALIDATE_FLOAT);
 
-	// 		// Lets attach the customer to the order
-	// 		$mollie->taxonomies()->attach($cart);
+        // Lets create a Mollie transaction
+        try {
 
-	// 		$this->triggerEvent('order_create_payment_transaction_succeed', $checkoutFields, [
-	// 			'cart' => $cart,
-	// 			'transaction' => $mollie,
-	// 		]);
+            $paymentMollie = Mollie::api()->payments()->create([
+                "amount"      => $priceTotal,
+                "description" => $description,
+                "redirectUrl" => $redirectUrl,
+                "webhookUrl" => $webhookUrl,
+            ]);
 
-	// 		return response()->json([
-	// 			'status' => 'succesful',
-	// 			'redirect_url' => $paymentMollie->links->paymentUrl
-	// 		]);
-	// 	}
-	// 	//catch exception
-	// 	catch( \Mollie_API_Exception $e) {
+            // Lets mutate the order so its easier to look at in the database
+            $mutatedOrder = $this->mutateOrder($order);
 
-	// 		$this->triggerEvent('order_create_payment_transaction_failure', $checkoutFields, [
-	// 			'cart' => $cart,
-	// 			'error' => $e->getMessage(),
-	// 		]);
+            // Saving the transaction
+            $mollie = new NikuPosts;
+            $mollie->post_type = 'mollie_transaction';
+            $mollie->post_title = $description;
+            $mollie->status = $paymentMollie->status;
+            $mollie->post_parent = $order->id;
+            $mollie->post_password = $paymentMollie->id;
+            $mollie->post_author = $user->id;
+            $mollie->post_content = json_encode($mutatedOrder);
+            $mollie->post_excerpt = $priceTotal;
+            $mollie->post_name = $order->post_name;
+            $mollie->save();
 
-	// 		// Need to create an event order has failed
-	// 		return response()->json([
-	// 			'status' => 'failed',
-	// 			'message' =>  'Message: ' .$e->getMessage(),
-	// 			'redirect_url' => $redirectUrl
-	// 		], 500);
-	// 	}
+            // Saving the transaction metas
+            $toSave = [];
+            $toSave['price_total'] = $priceTotal;
+            $toSave['price_total_received_by_payment_provider'] = $paymentMollie->amount;
+            $toSave['description'] = $description;
+            $toSave['ip_address'] = $order->getMeta('ip_address');
+            $toSave['redirectUrl'] = $redirectUrl;
+            $toSave['webhookUrl'] = $webhookUrl;
+            $toSave['mollie_id'] = $paymentMollie->id;
+            $mollie->saveMetas($toSave);
 
-	// }
+            // Lets trigger a function which we can hook into to save some information
+            $this->trigger_mollie_transaction_created($mutatedOrder, $paymentMollie, $user);
+
+            // Lets redirect to the payment url
+            return (object) [
+                'created' => true,
+                'redirection_url' => $paymentMollie->links->paymentUrl,
+            ];
+        }
+        //catch exception
+        catch( \Mollie_API_Exception $e) {
+
+            return (object) [
+                'created' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+
+
+    }
+
+    // Empty function to override in the checkout class
+    public function trigger_mollie_transaction_created($order, $mollie, $user)
+    {
+
+    }
+
+    // Empty function to override in the checkout class
+    public function trigger_mollie_transaction_failed()
+    {
+
+    }
+
+    public function show_custom_get_mollie_webhook($request, $id, $customId, $post)
+    {
+        // Validating the input
+        Validator::make([
+            'id' => $id,
+            'mollie_id' => $request->id
+        ], [
+            'id' => 'required',
+            'mollie_id' => 'required',
+        ])->validate();
+
+        dd($post);
+
+        $product = $this->fetchProduct($request->post_name);
+
+        // If the product does not exist, we log it into the database so we can add it later
+        if(!$product){
+            $unknownProduct = $this->fetchUnknownProduct($request->post_name);
+            if(!$unknownProduct){
+                $unknownProduct = new NikuPosts;
+                $unknownProduct->post_type = 'unknown-products';
+                $unknownProduct->post_title = $request->post_name;
+                $unknownProduct->post_name = $request->post_name;
+                $unknownProduct->save();
+            }
+
+            return $this->abort('Product "' . $request->product_id . '" does not exist or is inactive.');
+        }
+
+        // Lets get the add to cart product type configuration file
+        $cartConfig = $this->fetchProductTemplate($product->template);
+        if(!$cartConfig){
+            return $this->abort('The template of the product is not available.');
+        }
+
+        // Lets create the return array
+        $return = [
+            'post_type' => $product->template,
+        ];
+
+        return response()->json($return);
+    }
 
 
 }

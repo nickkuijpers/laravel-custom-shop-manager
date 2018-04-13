@@ -11,38 +11,38 @@ use Niku\Cart\Http\Managers\CreateAccountManager;
 use Niku\Cms\Http\Controllers\cmsController;
 
 class CreateAccount extends CreateAccountManager
-{	         
+{
 	// Setting up the template structure
     public function view()
     {
     	return [
     		'default' => [
-                
+
                 'label' => 'Afrekenen',
                 'description' => 'Vult u de benodigde gegevens in',
                 'css_class_customfields_wrapper' => 'col-md-9',
-    
+
                 'customFields' => [
 
-                    'steps' => [                        
+                    'steps' => [
                         'component' => 'niku-cart-steps-customfield',
-                        'saveable' => false,                                                                                   
-                        'value' => 'Afrekenen',         
-                        'mutator' => 'App\Application\Custom\Cart\Mutators\StepsMutator',                                                        
+                        'saveable' => false,
+                        'value' => 'Afrekenen',
+                        'mutator' => 'App\Application\Custom\Cart\Mutators\StepsMutator',
                         'active' => 1,
-                    ],         
+                    ],
 
-                    'title' => [                        
+                    'title' => [
                         'component' => 'niku-cart-title-customfield',
-                        'saveable' => false,                                                                                   
-                        'value' => 'Afrekenen',                                           
-                    ],                  
-                    
-                    'form_wrapper' => [                        
+                        'saveable' => false,
+                        'value' => 'Afrekenen',
+                    ],
+
+                    'form_wrapper' => [
                         'component' => 'niku-cart-form-wrapper-customfield',
-                        'css_class_row_wrapper' => 'row',                                                
-                        'saveable' => false,         
-                        'value' => '',               
+                        'css_class_row_wrapper' => 'row',
+                        'saveable' => false,
+                        'value' => '',
                         'customFields' => [
 
                             // 'contactgegevens_title' => [
@@ -51,10 +51,10 @@ class CreateAccount extends CreateAccountManager
                             //     'css_class_row_wrapper' => 'col-md-12 col-sm-12',
                             //     'css_class_title_wrapper' => 'col-md-12',
                             //     'css_class_title' => 'h4',
-                            //     'saveable' => false,          
-                            //     'value' => '',              
+                            //     'saveable' => false,
+                            //     'value' => '',
                             // ],
-            
+
                             // 'company' => [
                             //     'label' => 'Naam bedrijf',
                             //     'type' => 'text',
@@ -65,7 +65,7 @@ class CreateAccount extends CreateAccountManager
                             //     'css_class_input_wrapper' => 'col-md-12',
                             //     'validation' => 'required',
                             // ],
-            
+
                             // 'aanhef' => [
                             //     'label' => 'Aanhef',
                             //     'type' => 'text',
@@ -80,7 +80,7 @@ class CreateAccount extends CreateAccountManager
                             //     'css_class_input_wrapper' => 'col-md-12',
                             //     'validation' => '',
                             // ],
-            
+
                             // 'voornaam' => [
                             //     'label' => 'Voornaam',
                             //     'type' => 'text',
@@ -102,7 +102,7 @@ class CreateAccount extends CreateAccountManager
                             //     'css_class_input_wrapper' => 'col-md-12',
                             //     'validation' => 'required',
                             // ],
-            
+
                             // 'telefoonnummer' => [
                             //     'label' => 'Telefoonnummer',
                             //     'type' => 'text',
@@ -122,7 +122,7 @@ class CreateAccount extends CreateAccountManager
                                 'css_class_title' => 'h4',
                                 'value' => '',
                             ],
-            
+
                             'email' => [
                                 'label' => 'E-mailadres',
                                 'type' => 'text',
@@ -131,7 +131,7 @@ class CreateAccount extends CreateAccountManager
                                 'css_class_row_wrapper' => 'col-md-6 col-sm-6',
                                 'css_class_label' => 'col-md-12',
                                 'css_class_input_wrapper' => 'col-md-12',
-                                'validation' => 'required|email|unique:users,email',                                
+                                'validation' => 'required|email|unique:users,email',
                             ],
 
                             'password' => [
@@ -144,7 +144,7 @@ class CreateAccount extends CreateAccountManager
                                 'css_class_input_wrapper' => 'col-md-12',
                                 'validation' => 'required',
                             ],
-            
+
                             // 'factuurgegevens_title' => [
                             //     'label' => 'Factuurgegevens',
                             //     'component' => 'niku-cms-title-customfield',
@@ -153,7 +153,7 @@ class CreateAccount extends CreateAccountManager
                             //     'css_class_title' => 'h4',
                             //     'value' => '',
                             // ],
-            
+
                             // 'adres' => [
                             //     'label' => 'Adres',
                             //     'type' => 'text',
@@ -164,7 +164,7 @@ class CreateAccount extends CreateAccountManager
                             //     'css_class_input_wrapper' => 'col-md-12',
                             //     'validation' => 'required',
                             // ],
-            
+
                             // 'nummer' => [
                             //     'label' => 'Nummer',
                             //     'type' => 'text',
@@ -175,7 +175,7 @@ class CreateAccount extends CreateAccountManager
                             //     'css_class_input_wrapper' => 'col-md-12',
                             //     'validation' => 'required',
                             // ],
-            
+
                             // 'postcode' => [
                             //     'label' => 'Postcode',
                             //     'type' => 'text',
@@ -186,7 +186,7 @@ class CreateAccount extends CreateAccountManager
                             //     'css_class_input_wrapper' => 'col-md-12',
                             //     'validation' => 'required',
                             // ],
-            
+
                             // 'plaats' => [
                             //     'label' => 'Plaats',
                             //     'type' => 'text',
@@ -197,7 +197,7 @@ class CreateAccount extends CreateAccountManager
                             //     'css_class_input_wrapper' => 'col-md-12',
                             //     'validation' => 'required',
                             // ],
-            
+
                             // 'land' => [
                             //     'label' => 'Land',
                             //     'component' => 'niku-cms-select-customfield',
@@ -212,7 +212,7 @@ class CreateAccount extends CreateAccountManager
                             //     'value' => 'nl',
                             //     'validation' => '',
                             // ],
-            
+
                             // 'btw_nummer' => [
                             //     'label' => 'BTW nummer',
                             //     'type' => 'text',
@@ -222,24 +222,25 @@ class CreateAccount extends CreateAccountManager
                             //     'css_class_label' => 'col-md-12',
                             //     'css_class_input_wrapper' => 'col-md-12',
                             //     'validation' => '',
-                            // ],             
-        
-                            'submit' => [
-                                'label' => 'Account aanmaken',
-                                'component' => 'niku-cart-create-account-submit-customfield',                                                                        
-                                'validation' => '',
-                                'api_url' => '',
-                                'mutator' => 'App\Application\Custom\Cart\Mutators\CreateAccount\CreateAccountUrlMutator',  
-                                'saveable' => false,
-                                'value' => '',
-                            ],
+                            // ],
 
                         ]
                     ],
-                        
+
+                    'submit' => [
+                        'label' => 'Account aanmaken',
+                        'component' => 'niku-cart-create-account-submit-customfield',
+                        'validation' => '',
+                        'mutator' => 'App\Application\Custom\Cart\Mutators\CreateAccount\CreateAccountUrlMutator',
+                        'api_url' => '',
+                        'saveable' => false,
+                        'value' => '',
+                    ],
+
                 ],
             ],
-             
-    	];	
-    }    
+
+    	];
+    }
+
 }

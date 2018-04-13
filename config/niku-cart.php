@@ -2,6 +2,11 @@
 
 return [
 
+	'mollie' => [
+        'webhook_url' => env('MOLLIE_WEBHOOK_URL'),
+        'redirect_url' => env('MOLLIE_REDIRECT_URL'),
+    ],
+
     'authentication' => [
         'required' => true,
     ],
