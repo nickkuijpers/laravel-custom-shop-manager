@@ -126,19 +126,7 @@ class CreateAccountManager extends NikuPosts
         $sanitizedKeys = collect($this->helpers->getValidationsKeys($this))->keys()->toArray();
         $requestOnly = $request->only($sanitizedKeys);
 
-        // Lets save the changes
-        $user->first_name = $request->first_name;
-        $user->last_name = $request->last_name;
-        $user->email = $request->email;
-        $user->save();
-
-        $toSave = [];
-        foreach($requestOnly as $key => $value){
-            if(empty($value)){
-                $toSave[$key] = $value;
-            }
-        }
-        $user->saveMetas($toSave);
+        $this->saveUser($user, $requestOnly);
 
         $configurationsRequest = $this->configurationsRequired($cart, $request);
         if($configurationsRequest === true){
@@ -153,7 +141,25 @@ class CreateAccountManager extends NikuPosts
                 'name' => $linkTo,
             ],
         ]);
-	}
+    }
+
+    public function saveUser($user, $request)
+    {
+        // Lets save the changes
+        $user->first_name = $request->first_name;
+        $user->last_name = $request->last_name;
+        $user->email = $request->email;
+        $user->save();
+
+        $toSave = [];
+        foreach($requestOnly as $key => $value){
+            if(!empty($value)){
+                $toSave[$key] = $value;
+            }
+        }
+
+        $user->saveMetas($toSave);
+    }
 
     public function override_create_post($request)
     {
