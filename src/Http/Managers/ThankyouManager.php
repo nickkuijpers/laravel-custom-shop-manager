@@ -129,7 +129,7 @@ class ThankyouManager extends NikuPosts
         $order->post_mime_type = $paymentMollie->status;
         $order->save();
 
-        $this->trigger_mollie_transaction_webhook($order, $paymentMollie, $transaction);
+        $this->trigger_payment_changed_method($order, $paymentMollie, $transaction);
 
         return response()->json([
         	'message' => 'Payment status updated.'
@@ -137,7 +137,7 @@ class ThankyouManager extends NikuPosts
     }
 
     // Empty function to override in the checkout class
-    public function trigger_mollie_transaction_webhook($order, $paymentMollie, $transaction)
+    public function trigger_payment_changed_method($order, $paymentMollie, $transaction)
     {
 
     }

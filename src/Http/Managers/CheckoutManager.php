@@ -299,6 +299,8 @@ class CheckoutManager extends NikuPosts
 
         }
 
+        $this->trigger_order_created($order);
+
         // Redirect to thank you page
         return response()->json([
             'redirection_url' => $transaction->redirection_url
@@ -445,6 +447,11 @@ class CheckoutManager extends NikuPosts
 
     // Empty function to override in the checkout class
     public function trigger_mollie_transaction_failed($error)
+    {
+
+    }
+
+    public function trigger_order_created($order)
     {
 
     }
