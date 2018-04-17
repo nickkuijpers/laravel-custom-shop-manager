@@ -363,7 +363,7 @@ class CheckoutManager extends NikuPosts
     {
         // Setting the urls
         $redirectUrl = config('niku-cart.mollie.redirect_url') . '/thankyou?order=' . $order->post_name . '&url=/thankyou?order=' . $order->post_name;
-        $webhookUrl = config('niku-cart.mollie.webhook_url') . '/cpm/thankyou/show/' . $order->post_name . '/mollie_webhook';
+        $webhookUrl = config('niku-cart.mollie.webhook_url') . '/api/cpm/thankyou/show/' . $order->post_name . '/mollie_webhook';
 
         // Setting the description
         $description = 'Bestelling ' . $order->id;

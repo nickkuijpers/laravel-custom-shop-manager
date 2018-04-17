@@ -76,13 +76,19 @@ class ThankyouManager extends NikuPosts
         Log::info($request);
 
         // Validating the input
-        Validator::make([
+        $validator = Validator::make([
             'id' => $id,
             'transaction_id' => $request->id
         ], [
             'id' => 'required',
             'transaction_id' => 'required',
-        ])->validate();
+        ]);
+
+        if(!$validator->passes()){
+            return response()->json([
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
         // Setting the order
         $order = $post;
