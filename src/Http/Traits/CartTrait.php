@@ -294,7 +294,7 @@ trait CartTrait
                 'price_single' => $productPrices->priceSingle,
                 'quantity' => $quantity,
                 'price_tax' => $productPrices->priceTax,
-                'price_total' => $productPrices->priceTotal,
+                'price_total' => $productPrices->priceLine,
 
                 // Meta details
                 'postmeta' => $postmeta,
@@ -304,7 +304,7 @@ trait CartTrait
             ];
 
             // Adding the price to the total of the cart
-            $cartPriceSubtotal += $productPrices->priceSingle;
+            $cartPriceSubtotal += $productPrices->priceLine;
             $cartTaxTotal += $productPrices->priceTax;
             $cartPriceTotal += $productPrices->priceTotal;
         }
@@ -332,11 +332,14 @@ trait CartTrait
         if($pricesInclusiveTax === true){
             $totalWithoutTax = $productPriceTotal / $taxGroup['percentage'];
             $productTaxAmount = $productPriceTotal - $totalWithoutTax;
+            $productLineTotal = $productPriceTotal;
 
         // Need to add the tax percentage to the total price of the product in the cart
         } else {
             $totalWithTax = $productPriceTotal * $taxGroup['percentage'];
             $productTaxAmount = $totalWithTax - $productPriceTotal;
+            $productLineTotal = $productPriceTotal;
+            $productPriceTotal = $productPriceTotal + $productTaxAmount;
 
         }
 
@@ -344,6 +347,7 @@ trait CartTrait
             'priceSingle' => $productPriceSingle,
             'priceTax' => $productTaxAmount,
             'priceTotal' => $productPriceTotal,
+            'priceLine' => $productLineTotal,
         ];
 
         return $prices;
