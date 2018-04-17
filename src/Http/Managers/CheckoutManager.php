@@ -349,7 +349,7 @@ class CheckoutManager extends NikuPosts
     protected function createMollieTransaction($order, $user)
     {
         // Setting the urls
-        $redirectUrl = config('niku-cart.mollie.redirect_url') . '/thankyou?order=' . $order->post_name . '&url=/thankyou/' . $order->post_name;
+        $redirectUrl = config('niku-cart.mollie.redirect_url') . '/thankyou?order=' . $order->post_name . '&url=/thankyou?order' . $order->post_name;
         $webhookUrl = config('niku-cart.mollie.webhook_url') . '/cpm/checkout/show/' . $order->post_name . '/mollie_webhook';
 
         // Setting the description
@@ -470,6 +470,10 @@ class CheckoutManager extends NikuPosts
         $transaction->status = $paymentMollie->status;
         $transaction->template = $transactionExpired;
         $transaction->save();
+
+        // Lets change the status of the payment
+        $order->post_mime_type = $paymentMollie->status;
+        $order->save();
 
         $this->trigger_mollie_transaction_webhook($order, $paymentMollie, $transaction);
 

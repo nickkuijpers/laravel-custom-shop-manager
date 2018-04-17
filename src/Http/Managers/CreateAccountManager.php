@@ -161,17 +161,8 @@ class CreateAccountManager extends NikuPosts
         $user->saveMetas($toSave);
     }
 
-    public function override_create_post($request)
+    public function createUser($requestOnly)
     {
-        $cart = $this->fetchCart($request->cart_identifier);
-
-         // Validating the request
-        $validationRules = $this->helpers->validatePostFields($request->all(), $request, $this);
-        Validator::make($request->all(), $validationRules)->validate();
-
-        $sanitizedKeys = collect($this->helpers->getValidationsKeys($this))->keys()->toArray();
-        $requestOnly = $request->only($sanitizedKeys);
-
         $customer = new User;
         $customer->email = data_get($requestOnly, 'email');
         $customer->first_name = data_get($requestOnly, 'voornaam');
@@ -190,7 +181,7 @@ class CreateAccountManager extends NikuPosts
         // Saving all the other metas
         $toSave = [];
         foreach($requestOnly as $key => $value){
-            if(empty($value)){
+            if(!empty($value)){
                 $toSave[$key] = $value;
             }
         }
@@ -200,6 +191,20 @@ class CreateAccountManager extends NikuPosts
 
         // Setting the user role
         $customer->assignRole('default');
+    }
+
+    public function override_create_post($request)
+    {
+        $cart = $this->fetchCart($request->cart_identifier);
+
+         // Validating the request
+        $validationRules = $this->helpers->validatePostFields($request->all(), $request, $this);
+        Validator::make($request->all(), $validationRules)->validate();
+
+        $sanitizedKeys = collect($this->helpers->getValidationsKeys($this))->keys()->toArray();
+        $requestOnly = $request->only($sanitizedKeys);
+
+        $this->createUser($requestOnly);
 
         // Validate if configurations are required
         $checkConfigurations = (new Checkout)->override_show_post($cart->post_name, $request, 'shoppingcart');
@@ -229,7 +234,7 @@ class CreateAccountManager extends NikuPosts
         $user = $request->user('api');
         $user = User::where([
             ['id', '=', $user->id],
-        ])->first();
+        ])->with('meta')->first();
 
         if(!$user){
             return response()->json([
