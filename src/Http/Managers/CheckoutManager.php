@@ -105,11 +105,13 @@ class CheckoutManager extends NikuPosts
 			$values = [];
 			$postType = $cartValue->template;
 			$id = $cartValue->id;
-			$validation = (new CheckPostController)->internal($values, $postType, $id);
+            $validation = (new CheckPostController)->internal($values, $postType, $id);
 
 			if(optional($validation)->code && $validation->code == "failure"){
 				$continue = false;
-				$errors[$cartValue->post_title] = $validation->errors;
+                foreach($validation->errors->toArray() as $errorKey => $errorValue){
+                    $errors[$errorKey] = $errorValue;
+                }
 			}
 
 		}
@@ -161,17 +163,11 @@ class CheckoutManager extends NikuPosts
                 $message = 'You are not authorized to do this.';
             }
 
-			$toSave = [
-				'errors' => json_encode($onCheck['errors'])
-			];
-			$cart->saveMetas($toSave);
-
 			return response()->json([
 				'code' => 'error',
 				'redirect_to' => [
 					'name' => 'configure',
 				],
-				// 'errors' => $onCheck['errors'],
 			], 431);
         }
 

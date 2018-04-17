@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Niku\Cms\Http\NikuPosts;
 use Niku\Cart\Http\Traits\CartTrait;
 use Niku\Cms\Http\Controllers\cmsController;
+use App\Application\Custom\Cart\PostTypes\Checkout;
 use Niku\Cms\Http\Controllers\Cms\ShowPostController;
 
 class ConfigurateManager extends NikuPosts
@@ -80,8 +81,28 @@ class ConfigurateManager extends NikuPosts
         $this->view = $this->view();
     }
 
+    public function override_check_post($id, $request)
+    {
+        $cart = $this->fetchCart($id);
+
+        // Checking all configurations of the products
+        $onCheck = (new Checkout)->validateShow($id, $request, $cart);
+
+        if($onCheck['continue'] === false){
+            if(array_key_exists('message', $onCheck)){
+                $message = $onCheck['message'];
+            } else {
+                $message = 'You are not authorized to do this.';
+            }
+
+			return response()->json([
+				'errors' => $onCheck['errors'],
+			], 422);
+        }
+    }
+
     public function override_show_post($id, $request, $postType)
-    {		
+    {
 		// Lets validate if authentication is required
 		$authenticationRequired = config('niku-cart.authentication.required');
 		if($authenticationRequired === true){
@@ -99,12 +120,12 @@ class ConfigurateManager extends NikuPosts
 
         $collection = ['templates' => $this->view];
         $collection['config'] = $this->config;
-    
+
         switch($id) {
             case '0';
                  $toMerge = [];
             break;
-            default: 
+            default:
                 $post = NikuPosts::where([
                     [ 'post_name' , '=', $id]
                 ])->with('postmeta')->first();
@@ -112,11 +133,11 @@ class ConfigurateManager extends NikuPosts
                 $toMerge = [];
             break;
         }
-    
-        $collection = $this->helpers->addValuesToCollection($collection, $toMerge);        
+
+        $collection = $this->helpers->addValuesToCollection($collection, $toMerge);
         $collection = $this->helpers->showMutator($this, $collection, $request);
-    
+
         return $collection;
     }
-  
+
 }
