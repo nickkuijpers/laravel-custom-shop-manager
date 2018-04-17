@@ -171,8 +171,19 @@ class CheckoutManager extends NikuPosts
 				'redirect_to' => [
 					'name' => 'configure',
 				],
-				'errors' => $onCheck['errors'],
+				// 'errors' => $onCheck['errors'],
 			], 431);
+        }
+
+        // Lets validate if the payment method is filled in
+        $paymentMethod = $cart->getMeta('payment_method');
+		if(empty($paymentMethod)){
+            return response()->json([
+                'code' => 'error',
+                'redirect_to' => [
+                    'name' => 'payment-method',
+                ],
+            ], 431);
         }
 
 		// Getting the custom fields
