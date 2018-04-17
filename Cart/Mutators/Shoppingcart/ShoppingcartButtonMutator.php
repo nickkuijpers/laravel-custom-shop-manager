@@ -7,9 +7,9 @@ use Niku\Cms\Http\NikuTaxonomies;
 use Niku\Cart\Http\Controllers\CartMutatorController;
 
 class ShoppingcartButtonMutator extends CartMutatorController
-{	  	    
-    public function out($customField, $collection, $key, $postTypeModel, $holdValue, $request)    
-    {             
+{
+    public function out($customField, $collection, $key, $postTypeModel, $holdValue, $request)
+    {
         $postId = data_get($collection, 'post.id');
         if(!$postId){
             return $customField;
@@ -21,9 +21,9 @@ class ShoppingcartButtonMutator extends CartMutatorController
         ])->with('postmeta')->first();
 
         // Lets validate if configurations are required
-        $configurationsRequest = $this->configurationsRequired($cart, $request);        
+        $configurationsRequest = $this->configurationsRequired($cart, $request);
         if($configurationsRequest === true){
-            $linkTo = 'configure';
+            $linkTo = 'checkout';
         } else {
             $linkTo = 'checkout';
         }
@@ -46,7 +46,7 @@ class ShoppingcartButtonMutator extends CartMutatorController
                     'name' => 'checkout-login',
                 ];
 
-            }            
+            }
 
         } else {
 
@@ -57,6 +57,6 @@ class ShoppingcartButtonMutator extends CartMutatorController
 
         }
 
-        return $customField;   
-    }    
+        return $customField;
+    }
 }

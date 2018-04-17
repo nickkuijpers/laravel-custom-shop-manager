@@ -5,6 +5,7 @@ namespace Niku\Cart\Http\Managers;
 use Validator;
 use Illuminate\Http\Request;
 use Niku\Cms\Http\NikuPosts;
+use Illuminate\Support\Facades\Log;
 use Niku\Cart\Http\Traits\CartTrait;
 use App\Application\Custom\Models\User;
 use Niku\Cms\Http\Controllers\cmsController;
@@ -66,5 +67,66 @@ class ThankyouManager extends NikuPosts
         return response()->json([
             'payment_status' => $paymentStatus,
         ]);
+    }
+
+    public function show_custom_get_mollie_webhook($request, $id, $customId, $post)
+    {
+        // Lets log the webhook
+        Log::info($request->all());
+
+        // Validating the input
+        Validator::make([
+            'id' => $id,
+            'transaction_id' => $request->id
+        ], [
+            'id' => 'required',
+            'transaction_id' => 'required',
+        ])->validate();
+
+        // Setting the order
+        $order = $post;
+        $transactionId = $request->id;
+
+        // Fetching the transaction
+        $transaction = NikuPosts::where([
+            ['post_parent', '=', $order->id],
+            ['post_name', '=', $order->post_name],
+            ['post_password', '=', $transactionId],
+        ])->with('postmeta')->first();
+
+        // Return a error when the transaction is not found
+        if(empty($transaction)){
+            return response()->json([
+                'errors' => [
+                    'transaction' => 'De transactie is niet gevonden',
+                ]
+            ], 422);
+        }
+
+        // Fetching the payment status
+        $paymentMollie = Mollie::api()->payments()->get($transactionId);
+
+        // Validating if the payment is expired
+        if($paymentMollie->status == 'expired'){
+            $transactionExpired = true;
+        } else {
+            $transactionExpired = false;
+        }
+
+        // Saving the transaction with the new status
+        $transaction->status = $paymentMollie->status;
+        $transaction->template = $transactionExpired;
+        $transaction->save();
+
+        // Lets change the status of the payment
+        $order->post_mime_type = $paymentMollie->status;
+        $order->save();
+
+        $this->trigger_mollie_transaction_webhook($order, $paymentMollie, $transaction);
+
+        return response()->json([
+        	'message' => 'Payment status updated.'
+        ], 200);
+
     }
 }
