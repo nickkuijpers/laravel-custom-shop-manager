@@ -5,6 +5,7 @@ namespace Niku\Cart\Http\Managers;
 use Validator;
 use Illuminate\Http\Request;
 use Niku\Cms\Http\NikuPosts;
+use Mollie\Laravel\Facades\Mollie;
 use Illuminate\Support\Facades\Log;
 use Niku\Cart\Http\Traits\CartTrait;
 use App\Application\Custom\Models\User;
@@ -72,7 +73,7 @@ class ThankyouManager extends NikuPosts
     public function show_custom_get_mollie_webhook($request, $id, $customId, $post)
     {
         // Lets log the webhook
-        Log::info($request->all());
+        Log::info($request);
 
         // Validating the input
         Validator::make([
@@ -127,6 +128,11 @@ class ThankyouManager extends NikuPosts
         return response()->json([
         	'message' => 'Payment status updated.'
         ], 200);
+    }
+
+    // Empty function to override in the checkout class
+    public function trigger_mollie_transaction_webhook($order, $paymentMollie, $transaction)
+    {
 
     }
 }

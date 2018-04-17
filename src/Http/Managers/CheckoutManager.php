@@ -449,10 +449,4 @@ class CheckoutManager extends NikuPosts
 
     }
 
-    // Empty function to override in the checkout class
-    public function trigger_mollie_transaction_webhook($order, $paymentMollie, $transaction)
-    {
-
-    }
-
 }
