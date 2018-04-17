@@ -17,145 +17,151 @@ use Niku\Cart\Http\Managers\CheckoutManager;
 
 class CheckoutManager extends NikuPosts
 {
-	use CartTrait;
+    use CartTrait;
 
-	// The label of the custom post type
-	public $label = 'Checkout';
+    // The label of the custom post type
+    public $label = 'Checkout';
 
-	// Define the custom post type
-	public $identifier = 'shoppingcart';
+    // Define the custom post type
+    public $identifier = 'shoppingcart';
 
-	// Users can only view their own posts when this is set to true
-	public $userCanOnlySeeHisOwnPosts = false;
+    // Users can only view their own posts when this is set to true
+    public $userCanOnlySeeHisOwnPosts = false;
 
-	public $disableDefaultPostName = true;
-	public $disableSanitizingPostName = true;
-	public $makePostNameRandom = true;
+    public $disableDefaultPostName = true;
+    public $disableSanitizingPostName = true;
+    public $makePostNameRandom = true;
 
-	public $view;
-	public $helpers;
+    public $view;
+    public $helpers;
 
-	public $getPostByPostName = true;
+    public $getPostByPostName = true;
 
-	public $enableAllSpecificFieldsUpdate = true;
-	public $excludeSpecificFieldsFromUpdate = [];
+    public $enableAllSpecificFieldsUpdate = true;
+    public $excludeSpecificFieldsFromUpdate = [];
 
-	public $config = [
-		'back_to_previous_page' => false,
-		'disable_overview_button' => true,
-		'link_to_edit_post_type' => 'step4',
-		'created_at_post_type' => 'step4',
-		'redirect_after_created' => 'step4',
-		'redirect_after_editted_posttype' => 'step4',
-		'redirect_after_editted_name' => 'step4',
+    public $config = [
+        'back_to_previous_page' => false,
+        'disable_overview_button' => true,
+        'link_to_edit_post_type' => 'step4',
+        'created_at_post_type' => 'step4',
+        'redirect_after_created' => 'step4',
+        'redirect_after_editted_posttype' => 'step4',
+        'redirect_after_editted_name' => 'step4',
 
-		'template' => [
-			'single' => [
-				'enable_title' => false,
-				'page_title' => 'Winkelwagens',
+        'template' => [
+            'single' => [
+                'enable_title' => false,
+                'page_title' => 'Winkelwagens',
 
-				'enable_button' => false,
-				'link_back_to_listing' => [
-					'name' => 'step4',
-					'params' => [
-						'post_type' => 'step4',
-					],
-				],
-				'redirect_after_created_link' => [
-					'name' => 'step4',
-					'post_type' => 'step4',
-					'enable' => true,
-				],
-				'redirect_after_editted_link' => [
-					'name' => 'step4',
-					'post_type' => 'step4',
-					'enable' => true,
-				],
-			],
-			'list' => [
-				'enable' => false,
-				'page_title' => 'Woningen',
-				'link_create_new_post' => [
-					'name' => 'superadminSingle',
-					'params' => [
-						'post_type' => 'woningen',
-						'type' => 'new',
-						'id' => 0,
-					],
-				],
-			],
-		],
-	];
+                'enable_button' => false,
+                'link_back_to_listing' => [
+                    'name' => 'step4',
+                    'params' => [
+                        'post_type' => 'step4',
+                    ],
+                ],
+                'redirect_after_created_link' => [
+                    'name' => 'step4',
+                    'post_type' => 'step4',
+                    'enable' => true,
+                ],
+                'redirect_after_editted_link' => [
+                    'name' => 'step4',
+                    'post_type' => 'step4',
+                    'enable' => true,
+                ],
+            ],
+            'list' => [
+                'enable' => false,
+                'page_title' => 'Woningen',
+                'link_create_new_post' => [
+                    'name' => 'superadminSingle',
+                    'params' => [
+                        'post_type' => 'woningen',
+                        'type' => 'new',
+                        'id' => 0,
+                    ],
+                ],
+            ],
+        ],
+    ];
 
-	public function __construct()
-	{
-		$this->helpers = new cmsController;
-		$this->view = $this->view();
-	}
-
-	public function validateShow($id, $request, $cart)
+    public function __construct()
     {
-		$continue = true;
+        $this->helpers = new cmsController;
+        $this->view = $this->view();
+    }
 
-		$cartItems = $this->fetchAllCartProducts($cart);
+    public function validateShow($id, $request, $cart)
+    {
+        $continue = true;
 
-		$errors = [];
-		foreach($cartItems as $cartKey => $cartValue){
+        $cartItems = $this->fetchAllCartProducts($cart);
 
-			$values = [];
-			$postType = $cartValue->template;
-			$id = $cartValue->id;
+        $errors = [];
+        foreach($cartItems as $cartKey => $cartValue){
+
+            $values = [];
+            $postType = $cartValue->template;
+            $id = $cartValue->id;
             $validation = (new CheckPostController)->internal($values, $postType, $id);
 
-			if(optional($validation)->code && $validation->code == "failure"){
-				$continue = false;
-                foreach($validation->errors->toArray() as $errorKey => $errorValue){
+            if(optional($validation)->code && $validation->code == "failure"){
+                $continue = false;
+                if(is_array($validation->errors)){
+                    $errors = $validation->errors;
+                } else {
+                    $errors = $validation->errors->toArray();
+                }
+
+                foreach($errors as $errorKey => $errorValue){
                     $errors[$errorKey] = $errorValue;
                 }
-			}
+            }
 
-		}
+        }
 
-		if($continue === true){
-			$message = '';
-		} else {
-			$message = 'U heeft de configuratie benodigdheden niet correct ingevuld.';
-		}
+        if($continue === true){
+            $message = '';
+        } else {
+            $message = 'U heeft de configuratie benodigdheden niet correct ingevuld.';
+        }
 
-		return [
-			'continue' => $continue,
-			'errors' => $errors,
-			'message' => $message,
-		];
+        return [
+            'continue' => $continue,
+            'errors' => $errors,
+            'message' => $message,
+        ];
 
     }
 
-	public function override_show_post($id, $request, $postType)
+    public function override_show_post($id, $request, $postType)
     {
-		$cart = $this->fetchCart($id);
+        $cart = $this->fetchCart($id);
         if(empty($cart)){
             return $this->abort('The shoppingcart could not be found.', 422);
-		}
+        }
 
-		// Lets validate if authentication is required
-		$authenticationRequired = config('niku-cart.authentication.required');
-		if($authenticationRequired === true){
-			$user = $request->user('api');
-			if(!$user){
-				return response()->json([
-					'code' => 'error',
-					'redirect_to' => [
-						'name' => 'checkout-login',
-					],
-					'errors' => [
-						'auth' => ['You must be authenticated'],
-					],
-				], 431);
-			}
-		}
+        // Lets validate if authentication is required
+        $authenticationRequired = config('niku-cart.authentication.required');
+        if($authenticationRequired === true){
+            $user = $request->user('api');
+            if(!$user){
+                return response()->json([
+                    'code' => 'error',
+                    'redirect_to' => [
+                        'name' => 'checkout-login',
+                    ],
+                    'errors' => [
+                        'auth' => ['You must be authenticated'],
+                    ],
+                ], 431);
+            }
+        }
 
-		// Lets check if there are any products which have not been passed the configurations yet
-		$onCheck = $this->validateShow($id, $request, $cart);
+        // Lets check if there are any products which have not been passed the configurations yet
+        $onCheck = $this->validateShow($id, $request, $cart);
         if($onCheck['continue'] === false){
             if(array_key_exists('message', $onCheck)){
                 $message = $onCheck['message'];
@@ -163,17 +169,17 @@ class CheckoutManager extends NikuPosts
                 $message = 'You are not authorized to do this.';
             }
 
-			return response()->json([
-				'code' => 'error',
-				'redirect_to' => [
-					'name' => 'configure',
-				],
-			], 431);
+            return response()->json([
+                'code' => 'error',
+                'redirect_to' => [
+                    'name' => 'configure',
+                ],
+            ], 431);
         }
 
         // Lets validate if the payment method is filled in
         $paymentMethod = $cart->getMeta('payment_method');
-		if(empty($paymentMethod)){
+        if(empty($paymentMethod)){
             return response()->json([
                 'code' => 'error',
                 'redirect_to' => [
@@ -182,58 +188,58 @@ class CheckoutManager extends NikuPosts
             ], 431);
         }
 
-		// Getting the custom fields
-		$customFields = $this->view;
+        // Getting the custom fields
+        $customFields = $this->view;
 
-		// Creating the collection
-		$collection = [];
-		$collection['post'] = $cart;
-		$collection['templates'] = $customFields;
+        // Creating the collection
+        $collection = [];
+        $collection['post'] = $cart;
+        $collection['templates'] = $customFields;
         $collection['config'] = $this->config;
 
-		// Merging existing values
-		$toMerge = [];
-		$toMerge['post_title'] = [
-			'value' => $cart->post_title,
-		];
+        // Merging existing values
+        $toMerge = [];
+        $toMerge['post_title'] = [
+            'value' => $cart->post_title,
+        ];
 
-		foreach($cart->postmeta as $cartmetaKey => $cartmetaValue){
-			$toMerge[$cartmetaValue->meta_key]['value'] = $cartmetaValue->meta_value;
-		}
+        foreach($cart->postmeta as $cartmetaKey => $cartmetaValue){
+            $toMerge[$cartmetaValue->meta_key]['value'] = $cartmetaValue->meta_value;
+        }
 
-		// Executing default methods to merge and mutate
+        // Executing default methods to merge and mutate
         $collection = $this->helpers->addValuesToCollection($collection, $toMerge);
         $collection = $this->helpers->showMutator($this, $collection, $request);
 
-		// Unset unrequired items
+        // Unset unrequired items
         unset($collection['templates']['listing']);
 
-		$collection['instance'] = [
-			'post_type' => $postType,
-			'post_identifier' => $id,
-		];
+        $collection['instance'] = [
+            'post_type' => $postType,
+            'post_identifier' => $id,
+        ];
 
         return response()->json($collection);
     }
 
-	/**
+    /**
      * Handling the editting of the order
      */
     public function override_edit_response($postId, $request, $response)
     {
         // Validate if we need authentication
         $authenticationRequired = config('niku-cart.authentication.required');
-		if($authenticationRequired === true){
-			$user = $request->user('api');
-			if(!$user){
-				return response()->json([
-					'code' => 'error',
-					'redirect_to' => [
-						'name' => 'checkout-login',
-					],
-					'errors' => 'You must be authenticated',
-				], 431);
-			}
+        if($authenticationRequired === true){
+            $user = $request->user('api');
+            if(!$user){
+                return response()->json([
+                    'code' => 'error',
+                    'redirect_to' => [
+                        'name' => 'checkout-login',
+                    ],
+                    'errors' => 'You must be authenticated',
+                ], 431);
+            }
         }
 
         // Need to change the shopping cart to a order
@@ -485,7 +491,7 @@ class CheckoutManager extends NikuPosts
         $this->trigger_mollie_transaction_webhook($order, $paymentMollie, $transaction);
 
         return response()->json([
-        	'message' => 'Payment status updated.'
+            'message' => 'Payment status updated.'
         ], 200);
 
     }
