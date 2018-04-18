@@ -129,6 +129,10 @@ class ThankyouManager extends NikuPosts
         $order->post_mime_type = $paymentMollie->status;
         $order->save();
 
+        $toSave = [];
+        $toSave['payment_code'] = $transaction->post_password;
+        $order->saveMeta($toSave);
+
         $this->trigger_payment_changed_method($order, $paymentMollie, $transaction);
 
         return response()->json([
