@@ -131,7 +131,13 @@ class ThankyouManager extends NikuPosts
 
         $toSave = [];
         $toSave['payment_code'] = $transaction->post_password;
-        $order->saveMeta($toSave);
+        $order->saveMetas($toSave);
+
+        $orderId = $order->id;
+
+        $order = NikuPosts::where([
+            ['id', '=', $orderId]
+        ])->with('postmeta')->first();
 
         $this->trigger_payment_changed_method($order, $paymentMollie, $transaction);
 
